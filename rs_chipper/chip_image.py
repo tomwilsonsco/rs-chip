@@ -2,6 +2,7 @@ from pathlib import Path
 import rasterio as rio
 from rasterio.windows import Window
 import numpy as np
+from tqdm import tqdm
 
 def chip_image(input_file_path, output_path, pixel_dimensions=128, offset=64):
     """
@@ -32,7 +33,7 @@ def chip_image(input_file_path, output_path, pixel_dimensions=128, offset=64):
 
     # Calculate the range for x and y to create chips
     with rio.open(input_file_path) as src:
-        for y in range(0, src.height, offset):
+        for y in tqdm(range(0, src.height, offset), desc="Chipping image..."):
             for x in range(0, src.width, offset):
                 window = Window(x, y, pixel_dimensions, pixel_dimensions)
                 
