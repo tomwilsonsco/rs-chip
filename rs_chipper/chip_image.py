@@ -4,7 +4,7 @@ from rasterio.windows import Window
 import numpy as np
 from tqdm import tqdm
 
-def chip_image(input_image_path, output_path, pixel_dimensions=128, offset=64):
+def chip_image(input_image_path, output_path, pixel_dimensions=128, offset=64, standard_scale=True, sample_size=10000):
     """
     Split a satellite image into smaller tiles or chips.
 
@@ -13,6 +13,9 @@ def chip_image(input_image_path, output_path, pixel_dimensions=128, offset=64):
         output_path (str): The directory path where the output tiles will be saved.
         pixel_dimensions (int, optional): The height and width of each tile in pixels. Defaults to 128.
         offset (int, optional): The offset used when creating tiles, to define the step size. Defaults to 64.
+        standard_scale (bool, optional): Whether to standard scale from a sample of pixel values. Defaults to True.
+        sample_size (int, optional): If standard_scale is True, how many pixels are sampled 
+        to derive mean and standard deviation for scaling. 
 
     Returns:
         None
