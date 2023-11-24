@@ -12,7 +12,8 @@ def standard_scale_image(image_array, scaler_source, band_names):
         scaler_source (str or dict): The source of the scaling parameters. It can 
                                      be a path to a pickle file or a dictionary 
                                      with statistics.
-        band_names (list): A list of names corresponding to the bands in the image array.
+        band_names (list): A list of names corresponding to the bands in the image array. The names
+                           must be in the same order as they are found in the image_array.
 
     Returns:
         numpy.array: The image array with each band scaled to have mean 0 and 
