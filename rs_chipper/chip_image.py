@@ -11,6 +11,7 @@ from .standard_scale_array import standard_scale_array
 def chip_image(
     input_image_path,
     output_path,
+    output_name=None,
     pixel_dimensions=128,
     offset=64,
     standard_scale=True,
@@ -23,6 +24,8 @@ def chip_image(
     Args:
         input_image_path (str): The path to the input satellite image.
         output_path (str): The directory path where the output tiles will be saved.
+        output_names (str, optional): The stem name of each chip, if not specified it will be
+        taken from the input name.
         pixel_dimensions (int, optional): The height and width of each tile in pixels. Defaults to 128.
         offset (int, optional): The offset used when creating tiles, to define the step size. Defaults to 64.
         standard_scale (bool, optional): Whether to standard scale from a sample of pixel values. Defaults to True.
