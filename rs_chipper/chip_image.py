@@ -82,7 +82,8 @@ def chip_image(
                 if output_name is None:
                     output_file_name = f"{input_image_path.stem}_{x}_{y}.tif"
                 else:
-                    output_file_name = f"{output_name.replace(".tif", "")}_{x}_{y}.tif"
+                    output_name = output_name.replace(".tif", "")
+                    output_file_name = f"{output_name}_{x}_{y}.tif"
                 output_file_path = output_path / output_file_name
 
                 with rio.open(
