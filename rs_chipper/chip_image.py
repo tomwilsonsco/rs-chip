@@ -24,8 +24,8 @@ def chip_image(
     Args:
         input_image_path (str): The path to the input satellite image.
         output_path (str): The directory path where the output tiles will be saved.
-        output_names (str, optional): The stem name of each chip, if not specified it will be
-        taken from the input name.
+        output_name (str, optional): The stem name of each chip, if not specified it will be
+        the input image name.
         pixel_dimensions (int, optional): The height and width of each tile in pixels. Defaults to 128.
         offset (int, optional): The offset used when creating tiles, to define the step size. Defaults to 64.
         standard_scale (bool, optional): Whether to standard scale from a sample of pixel values. Defaults to True.
@@ -78,8 +78,11 @@ def chip_image(
                 if standard_scale:
                     chip = standard_scale_array(chip, scaler_dict, src.descriptions)
                     d_type = chip.dtype
-
-                output_file_name = f"{input_image_path.stem}_{x}_{y}.tif"
+                
+                if output_name is None:
+                    output_file_name = f"{input_image_path.stem}_{x}_{y}.tif"
+                else:
+                    output_file_name = f"{output_name.replace(".tif", "")}_{x}_{y}.tif"
                 output_file_path = output_path / output_file_name
 
                 with rio.open(
