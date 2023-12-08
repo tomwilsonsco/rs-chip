@@ -24,6 +24,7 @@ def remove_background_only(
     image_chips_dir,
     image_extn="tif",
     background_val=0,
+    non_background_min=1000,
     masks_prefix=None,
     images_prefix=None,
 ):
@@ -36,6 +37,8 @@ def remove_background_only(
         image_extn (str, optional): The extension for the image files. Defaults to "tif".
         background_val (int, optional): Pixel value for background in the masks.
         A sum of all values not equal to the background value are used for the check. Defaults to 0.
+        non_background_min (int, optional): How many non-background pixels must be found in a chip
+        image in order to retain it. Defaults to 1000.
         masks_prefix (str, optional): If image and mask file names are not identical
         what is the name of the mask file (aside from its index). Defaults to None.
         images_prefix (str, optional): Used in combination with `masks_prefix`.
@@ -59,7 +62,7 @@ def remove_background_only(
     for f in image_files:
         with rio.open(f) as src:
             img = src.read(1)
-        if np.sum(img != background_val) == 0:
+        if np.sum(img != background_val) < non_background_min:
             image_file = _find_image_eq_mask(
                 f, image_chips_dir, masks_prefix, images_prefix
             )
