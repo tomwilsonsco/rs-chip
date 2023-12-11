@@ -8,7 +8,7 @@ from .sample_image_pixels import sample_image_pixels
 from .standard_scale_array import standard_scale_array
 
 
-def _save_batch_as_npz(output_path, file_name_stem, batch, batch_index):
+def _save_batch_as_npz(output_path, batch, batch_index):
     """
     Save a batch of chips as an NPZ file.
 
@@ -18,9 +18,7 @@ def _save_batch_as_npz(output_path, file_name_stem, batch, batch_index):
         batch (list): List of image chips (np.ndarray).
         batch_index (int): Index of the batch.
     """
-    if file_name_stem is None:
-        file_name_stem = "batch"
-    np.savez_compressed(output_path / f"{file_name_stem}_{batch_index}.npz", *batch)
+    np.savez_compressed(output_path / f"batch_{batch_index}.npz", **batch)
 
 
 def chip_image_to_npz(
@@ -32,16 +30,18 @@ def chip_image_to_npz(
     standard_scale=True,
     sample_size=10000,
     scaler_source=None,
-    batch_size=100,
+    batch_size=1000,
+    background_val=0,
+    non_background_min=1000,
 ):
     """
     Split a satellite image into smaller tiles or chips.
 
     Args:
         input_image_path (str): The path to the input satellite image.
-        output_path (str): The directory path where the output tiles will be saved.
-        output_name (str, optional): The stem name of each chip, if not specified it will be
-        the input image name.
+        output_path (str): The directory path where the output .npz files will be saved.
+        output_name (str, optional): The stem name of each array in npz dict,
+        if not specified it will be the input image name.
         pixel_dimensions (int, optional): The height and width of each tile in pixels. Defaults to 128.
         offset (int, optional): The offset used when creating tiles, to define the step size. Defaults to 64.
         standard_scale (bool, optional): Whether to standard scale from a sample of pixel values. Defaults to True.
@@ -79,7 +79,7 @@ def chip_image_to_npz(
 
     # Calculate the range for x and y to create chips
     with rio.open(input_image_path) as src:
-        batch = []
+        batch = {}
         batch_index = 0
         for y in tqdm(range(0, src.height, offset), desc="Chipping image..."):
             for x in range(0, src.width, offset):
@@ -94,14 +94,19 @@ def chip_image_to_npz(
                 if standard_scale:
                     chip = standard_scale_array(chip, scaler_dict, src.descriptions)
 
-                batch.append(chip)
+                if output_name is None:
+                    arr_name = f"{input_image_path.stem}_{x}_{y}"
+                else:
+                    arr_name = f"{output_name}_{x}_{y}"
+
+                batch[arr_name] = chip
 
                 # Check if batch is full
                 if len(batch) == batch_size:
                     # Save the batch as an NPZ file
-                    _save_batch_as_npz(output_path, output_name, batch, batch_index)
-                    batch = []  # Start a new batch
+                    _save_batch_as_npz(output_path, batch, batch_index)
+                    batch = {}  # Start a new batch
                     batch_index += 1
 
         if batch:
-            _save_batch_as_npz(output_path, output_name, batch, batch_index)
+            _save_batch_as_npz(output_path, batch, batch_index)
