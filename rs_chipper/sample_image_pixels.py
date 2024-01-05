@@ -40,8 +40,16 @@ def sample_image_pixels(input_image_path, sample_size=10000):
 
         # Calculate mean and standard deviation for each band
         for band_index in range(src.count):
-            # Use band description if available, otherwise default to 'Band_<index>'
-            band_name = (
+            band_pixel_values = pixel_values[:, band_index]
+            valid_band_pixel_values = band_pixel_values[~np.isnan(band_pixel_values)]
+            band_vals = {
+                "band_name": band_names[band_index],
+                "mean": np.mean(valid_band_pixel_values),
+                "std": np.std(valid_band_pixel_values),
+            }
+            stats_dict[band_index] = band_vals
+
+            """ band_name = (
                 band_names[band_index]
                 if band_names[band_index]
                 else f"Band_{band_index + 1}"
@@ -49,7 +57,7 @@ def sample_image_pixels(input_image_path, sample_size=10000):
             band_pixel_values = pixel_values[:, band_index]
             valid_band_pixel_values = band_pixel_values[~np.isnan(band_pixel_values)]
             stats_dict[f"{band_name}_mean"] = np.mean(valid_band_pixel_values)
-            stats_dict[f"{band_name}_std"] = np.std(valid_band_pixel_values)
+            stats_dict[f"{band_name}_std"] = np.std(valid_band_pixel_values) """
 
     # Create the pickle file path
     pickle_file_name = f"{input_image_path.stem}_{sample_size}.pkl"

@@ -30,25 +30,23 @@ def standard_scale_array(image_array, scaler_source, band_names):
     scaler_dict = load_scaler(scaler_source)
 
     # Validate the number of bands against the number of band names provided
-    if image_array.shape[0] != len(band_names):
+    if image_array.shape[0] != len(scaler_dict.keys()):
         raise ValueError(
-            "The number of band names provided does not match the number of bands in the image array."
+            "The number of bands in scaler dict does not match the number of bands in the image array."
         )
 
     # Apply standard scaling to each band
     scaled_image_array = np.empty_like(image_array, dtype=np.float32)
-    for band_index, band_name in enumerate(band_names):
-        mean_key = f"{band_name}_mean"
-        std_key = f"{band_name}_std"
-
-        if mean_key in scaler_dict and std_key in scaler_dict:
-            mean = scaler_dict[mean_key]
-            std = scaler_dict[std_key]
+    for band_index in range(0, image_array.shape[0]):
+        band_vals = scaler_dict[band_index]
+        if "mean" in band_vals and "std" in band_vals:
+            mean = band_vals["mean"]
+            std = band_vals["std"]
             # Perform standard scaling on the band
             scaled_image_array[band_index] = (image_array[band_index] - mean) / std
         else:
             raise KeyError(
-                f"Mean or standard deviation for {band_name} not found in scaler dictionary."
+                f"Mean or standard deviation for band index {band_index} not found in scaler dictionary."
             )
 
     return scaled_image_array
