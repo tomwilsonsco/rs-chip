@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from .load_scaler import load_scaler
 from .sample_image_pixels import sample_image_pixels
-from .standard_scale_array import standard_scale_array
+from .apply_scaler import apply_scaler
 
 
 def chip_image(
@@ -76,9 +76,9 @@ def chip_image(
                 # Read data into the chip array
                 chip = src.read(window=window, out=chip_data, boundless=True)
                 if standard_scale:
-                    chip = standard_scale_array(chip, scaler_dict, src.descriptions)
+                    chip = apply_scaler(chip, scaler_dict)
                     d_type = chip.dtype
-                
+
                 if output_name is None:
                     output_file_name = f"{input_image_path.stem}_{x}_{y}.tif"
                 else:

@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from .load_scaler import load_scaler
 from .sample_image_pixels import sample_image_pixels
-from .standard_scale_array import standard_scale_array
+from .apply_scaler import apply_scaler
 
 
 def _save_batch_as_npz(output_path, batch, batch_index):
@@ -31,8 +31,6 @@ def chip_image_to_npz(
     sample_size=10000,
     scaler_source=None,
     batch_size=1000,
-    background_val=0,
-    non_background_min=1000,
 ):
     """
     Split a satellite image into smaller tiles or chips.
@@ -56,9 +54,7 @@ def chip_image_to_npz(
         None
 
     This function uses rasterio to read a satellite image, then splits the image into
-    smaller square tiles of specified dimensions and saves them to the output path.
-    The output tiles are named using the base name of the input file with appended
-    x and y offsets and saved as TIFF files. Optionally the chip pixel values can be standard
+    smaller square tiles of specified dimensions. Optionally the chip pixel values can be standard
     scaled before saving, using a sample of the full image pixels.
     """
     print(f"Chipping {input_image_path} to /{output_path}...")
@@ -92,7 +88,7 @@ def chip_image_to_npz(
                 # Read data into the chip array
                 chip = src.read(window=window, out=chip_data, boundless=True)
                 if standard_scale:
-                    chip = standard_scale_array(chip, scaler_dict, src.descriptions)
+                    chip = apply_scaler(chip, scaler_dict)
 
                 if output_name is None:
                     arr_name = f"{input_image_path.stem}_{x}_{y}"
