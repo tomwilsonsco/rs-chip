@@ -145,7 +145,7 @@ def test_tif_remove(setup_output_dir):
     ), "Remaining chips and image file number differs"
 
 
-# repeat the same but for tif file chips not npz
+# specifying a large and small background threshold and compare
 def test_non_background_min(setup_output_dir):
     out_dir = setup_output_dir
     out_mask = out_dir / "output_mask.tif"
