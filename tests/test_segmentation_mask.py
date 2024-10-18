@@ -5,6 +5,7 @@ from pathlib import Path
 import rasterio as rio
 import numpy as np
 
+
 @pytest.fixture(scope="function")
 def temp_output_dir():
     """
@@ -12,6 +13,7 @@ def temp_output_dir():
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)
+
 
 def test_run_mask_creator(temp_output_dir):
     """
@@ -26,14 +28,15 @@ def test_run_mask_creator(temp_output_dir):
     # Check if the output file was created
     assert out_fp.exists(), "Output mask file was not created."
 
+
 def test_invalid_class_field(temp_output_dir):
     """
     Test SegmentationMask with an invalid class field that does not exist.
     """
     out_fp = temp_output_dir / "output_mask.tif"
     with pytest.raises(
-            ValueError,
-            match="The class_field 'invalid_field' does not exist in input features.",
+        ValueError,
+        match="The class_field 'invalid_field' does not exist in input features.",
     ):
         mask_creator = SegmentationMask(
             "tests/data/test_img.tif",
@@ -43,14 +46,15 @@ def test_invalid_class_field(temp_output_dir):
         )
         mask_creator.create_mask()
 
+
 def test_non_integer_class_field(temp_output_dir):
     """
     Test SegmentationMask with a class field that is not an integer type.
     """
     out_fp = temp_output_dir / "output_mask.tif"
     with pytest.raises(
-            ValueError,
-            match="The class_field 'non_int_test' must be an integer field.",
+        ValueError,
+        match="The class_field 'non_int_test' must be an integer field.",
     ):
         mask_creator = SegmentationMask(
             "tests/data/test_img.tif",
@@ -59,6 +63,7 @@ def test_non_integer_class_field(temp_output_dir):
             class_field="non_int_test",
         )
         mask_creator.create_mask()
+
 
 def test_mask_output_crs(temp_output_dir):
     """
@@ -75,8 +80,9 @@ def test_mask_output_crs(temp_output_dir):
         expected_crs = src.crs
     with rio.open(out_fp) as mask_src:
         assert (
-                mask_src.crs == expected_crs
+            mask_src.crs == expected_crs
         ), "CRS of the output mask does not match the input image."
+
 
 def test_rasterized_mask_values(temp_output_dir):
     """
@@ -93,8 +99,6 @@ def test_rasterized_mask_values(temp_output_dir):
         mask = mask_src.read(1)
         unique_values = np.unique(mask)
         assert (
-                len(unique_values) > 1
+            len(unique_values) > 1
         ), "The output mask should contain more than one unique value."
-        assert (
-                0 in unique_values
-        ), "The output mask should contain background value 0."
+        assert 0 in unique_values, "The output mask should contain background value 0."
