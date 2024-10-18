@@ -30,18 +30,18 @@ class ImageChip:
     """
 
     def __init__(
-            self,
-            input_image_path,
-            output_path,
-            output_name=None,
-            pixel_dimensions=128,
-            offset=64,
-            standard_scale=True,
-            sample_size=10000,
-            scaler_source=None,
-            use_multiprocessing=True,
-            output_format="tif",
-            max_batch_size=10,
+        self,
+        input_image_path,
+        output_path,
+        output_name=None,
+        pixel_dimensions=128,
+        offset=64,
+        standard_scale=True,
+        sample_size=10000,
+        scaler_source=None,
+        use_multiprocessing=True,
+        output_format="tif",
+        max_batch_size=10,
     ):
         self.input_image_path = Path(input_image_path)
         self.output_path = Path(output_path) if output_path else Path(input_image_path)
@@ -91,16 +91,16 @@ class ImageChip:
             None: Writes the chip to a GeoTIFF file at the specified path.
         """
         with rio.open(
-                output_file_path,
-                "w",
-                driver="GTiff",
-                height=self.pixel_dimensions,
-                width=self.pixel_dimensions,
-                count=src.count,
-                dtype=d_type,
-                crs=src.crs,
-                transform=transform,
-                nodata=0,
+            output_file_path,
+            "w",
+            driver="GTiff",
+            height=self.pixel_dimensions,
+            width=self.pixel_dimensions,
+            count=src.count,
+            dtype=d_type,
+            crs=src.crs,
+            transform=transform,
+            nodata=0,
         ) as dst:
             dst.write(chip)
 
@@ -224,7 +224,7 @@ class ImageChip:
 
     @staticmethod
     def apply_scaler(
-            array: np.ndarray, scaler_dict: dict[int, dict[str, float]]
+        array: np.ndarray, scaler_dict: dict[int, dict[str, float]]
     ) -> np.ndarray:
         """Standard scales a numpy array based on mean and std values from a dictionary.
 
@@ -318,18 +318,22 @@ class ImageChip:
             list: A list of tuples, where each tuple has an id and a list of windows and minx, miny window identifiers.
         """
         if self.use_multiprocessing:
-            num_cores = multiprocessing.cpu_count() - 1 # leave one core free?
+            num_cores = multiprocessing.cpu_count() - 1  # leave one core free?
             batch_size = min(self.max_batch_size, max(1, len(windows) // num_cores))
         else:
             batch_size = self.max_batch_size
 
         print(f"Using batch size {batch_size}")
 
-        num_batches = len(windows) // batch_size + (1 if len(windows) % batch_size != 0 else 0)
-        batches = [(i, windows[i * batch_size : (i + 1) * batch_size]) for i in range(num_batches)]
+        num_batches = len(windows) // batch_size + (
+            1 if len(windows) % batch_size != 0 else 0
+        )
+        batches = [
+            (i, windows[i * batch_size : (i + 1) * batch_size])
+            for i in range(num_batches)
+        ]
 
         return batches
-
 
     def chip_image(self) -> None:
         """
@@ -365,7 +369,7 @@ class ImageChip:
 
         if self.use_multiprocessing:
             print(f"Processing {len(batches)} batches in parallel.")
-            num_cores = multiprocessing.cpu_count() - 1 # leave a core free?
+            num_cores = multiprocessing.cpu_count() - 1  # leave a core free?
             print(f"Using {num_cores} cores.")
             with multiprocessing.Pool(processes=num_cores) as pool:
                 pool.map(self._process_batch, batches)
@@ -377,4 +381,3 @@ class ImageChip:
 
         elapsed_time = time.time() - start_time
         print(f"Chipping completed in {elapsed_time:.2f} seconds.")
-

@@ -89,7 +89,9 @@ class SegmentationMask:
         return input_features
 
     def _clip_features_to_image(
-        self, input_features: gpd.GeoDataFrame, image_bounds: rasterio.coords.BoundingBox
+        self,
+        input_features: gpd.GeoDataFrame,
+        image_bounds: rasterio.coords.BoundingBox,
     ) -> gpd.GeoDataFrame:
         """
         Clips the input features to the extent of the input image.
