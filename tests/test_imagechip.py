@@ -6,10 +6,12 @@ from pathlib import Path
 import tempfile
 from rschip import ImageChip
 
+
 @pytest.fixture(scope="function")
 def setup_output_dir():
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)
+
 
 def chip_image_run(
     output_path,
@@ -51,6 +53,7 @@ def load_tif(tif_file_path):
         prof = f.profile
     return arr, prof
 
+
 def npz_files_to_list(out_dir):
     array_list = []
     for file_path in Path(out_dir).glob("*.npz"):
@@ -62,6 +65,7 @@ def npz_files_to_list(out_dir):
 
 def tif_files_to_list(out_dir):
     return list(Path(out_dir).glob("*.tif"))
+
 
 def test_image_chip(setup_output_dir):
     out_dir = setup_output_dir
@@ -79,6 +83,7 @@ def test_image_chip(setup_output_dir):
     npz_files = list(out_dir.glob("*.npz"))
     assert len(npz_files) > 0, "No NPZ files were created."
 
+
 def test_array_equality(setup_output_dir):
     out_dir = setup_output_dir
     scaler_fp = f"{out_dir}/test_img_10000.pkl"
@@ -92,6 +97,7 @@ def test_array_equality(setup_output_dir):
     # Compare arrays
     assert np.array_equal(tif_arr, npz_arr), "Arrays are not equal."
 
+
 def test_image_and_array_count(setup_output_dir):
     out_dir = setup_output_dir
 
@@ -102,6 +108,7 @@ def test_image_and_array_count(setup_output_dir):
     npz_array_count = len(npz_files_to_list(out_dir))
     tif_file_count = len(tif_files_to_list(out_dir))
     assert npz_array_count == tif_file_count, "Mismatch in number of arrays and images."
+
 
 def test_scaler_functionality():
     sample_array = np.random.rand(3, 128, 128) * 100
@@ -116,10 +123,15 @@ def test_scaler_functionality():
         sample_array, unscaled_array, atol=1e-1
     ), "Scaling/unscaling mismatch"
 
+
 def test_large_window_image(setup_output_dir):
     out_dir = setup_output_dir
-    chip_image_run(output_path=out_dir, output_format="tif", pixel_dimensions=512, offset=256)
-    chip_image_run(output_path=out_dir, output_format="npz", pixel_dimensions=512, offset=256)
+    chip_image_run(
+        output_path=out_dir, output_format="tif", pixel_dimensions=512, offset=256
+    )
+    chip_image_run(
+        output_path=out_dir, output_format="npz", pixel_dimensions=512, offset=256
+    )
 
     # Verify that at least one file was created
     tif_files = tif_files_to_list(out_dir)
@@ -139,6 +151,38 @@ def test_multiprocessor_not(setup_output_dir):
     assert (
         mp_files == sp_files
     ), "multiprocessing and single processing have different results"
+
+
+def test_tile_count(setup_output_dir):
+    out_dir = setup_output_dir
+    input_image_path = "tests/data/test_img.tif"
+    pixel_dimensions = 128
+    offset = 64
+
+    # Read the input image to get its dimensions
+    with rio.open(input_image_path) as src:
+        img_height = src.height
+        img_width = src.width
+
+    # Calculate expected number of tiles
+    expected_tiles_x = (img_width + offset - 1) // offset
+    expected_tiles_y = (img_height + offset - 1) // offset
+    expected_tile_count = expected_tiles_x * expected_tiles_y
+
+    # Run the chipping process
+    chip_image_run(
+        output_path=out_dir,
+        input_image_path=input_image_path,
+        pixel_dimensions=pixel_dimensions,
+        offset=offset,
+        output_format="tif",
+    )
+
+    # Verify that the expected number of tiles were created
+    tif_files = tif_files_to_list(out_dir)
+    assert (
+        len(tif_files) == expected_tile_count
+    ), f"Expected {expected_tile_count} tiles, but found {len(tif_files)}."
 
 
 if __name__ == "__main__":
