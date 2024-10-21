@@ -1,6 +1,6 @@
 # rschip
 
-Split satellite images into small, fixed-sized tiles, for input into convolutional neural networks (cnn), [Segment Anything](https://arxiv.org/abs/2304.02643).
+Split satellite images into small, fixed-sized tiles, for input into convolutional neural networks (cnn), or vision transformers (ViT) such as [Segment Anything](https://arxiv.org/abs/2304.02643).
 
 ## Features
 
