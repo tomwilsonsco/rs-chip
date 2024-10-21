@@ -14,13 +14,12 @@ class ImageChip:
     Attributes:
         input_image_path (Path): The path to the input satellite image.
         output_path (Path): The directory path where the output tiles will be saved.
-        output_name (str): The stem name of each chip.
+        output_name (str): The stem name of each chip. Optional and defaults to image file name in `input_image_path`.
         pixel_dimensions (int): The height and width of each tile in pixels. Defaults to 128.
         offset (int): The offset used when creating tiles, to define the step size. Defaults to 64.
         standard_scale (bool): Whether to standard scale from a sample of pixel values. Defaults to True.
         sample_size (int): Number of pixel coordinates to sample for standard scaling. Defaults to 10000.
         scaler_source (Path or None): Path to a pickle file or dictionary for scaling parameters. Defaults to None.
-        scaler (dict or None): Stores the calculated or loaded scaling dictionary.
         use_multiprocessing (bool): Whether to use multiprocessing for chipping. Defaults to True.
         output_format (str): The format of the output files, either 'tif' or 'npz'.
                              If tif then tif file written per tile window. If npz then `batch_size` batches
@@ -67,8 +66,8 @@ class ImageChip:
 
         Yields:
             tuple: A tuple containing:
-                - x (int): The x-coordinate of the top-left corner of the window.
-                - y (int): The y-coordinate of the top-left corner of the window.
+                - x (int): The x-coordinate of the bottom-left corner of the window.
+                - y (int): The y-coordinate of the bottom-left corner of the window.
                 - window (rasterio.windows.Window): A Window of the region of the image to be processed.
         """
         for y in range(0, src.height, self.offset):
@@ -125,8 +124,8 @@ class ImageChip:
         Generate the output file path for a chip based on its x and y coordinates.
 
         Args:
-            x (int): The x-coordinate of the top-left corner of the chip.
-            y (int): The y-coordinate of the top-left corner of the chip.
+            x (int): The x-coordinate of the bottom-left corner of the chip.
+            y (int): The y-coordinate of the bottom-left corner of the chip.
 
         Returns:
             Path: The full path (as a `Path` object) where the chip will be saved, including the generated file name.
