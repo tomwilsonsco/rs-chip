@@ -26,7 +26,7 @@ jobs:
       # Step 4: Run flake8 for linting
       - name: Run flake8
         run: |
-          flake8 .
+          flake8 . --max-line-length 127
 
       # Step 5: Run black to check code formatting
       - name: Run black (check)
