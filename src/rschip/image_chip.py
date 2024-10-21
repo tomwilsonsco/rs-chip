@@ -29,18 +29,18 @@ class ImageChip:
     """
 
     def __init__(
-            self,
-            input_image_path,
-            output_path,
-            output_name=None,
-            pixel_dimensions=128,
-            offset=64,
-            standard_scale=True,
-            sample_size=10000,
-            scaler_source=None,
-            use_multiprocessing=True,
-            output_format="tif",
-            max_batch_size=10,
+        self,
+        input_image_path,
+        output_path,
+        output_name=None,
+        pixel_dimensions=128,
+        offset=64,
+        standard_scale=True,
+        sample_size=10000,
+        scaler_source=None,
+        use_multiprocessing=True,
+        output_format="tif",
+        max_batch_size=10,
     ):
         self.input_image_path = Path(input_image_path)
         self.output_path = Path(output_path) if output_path else Path(input_image_path)
@@ -90,16 +90,16 @@ class ImageChip:
             None: Writes the chip to a GeoTIFF file at the specified path.
         """
         with rio.open(
-                output_file_path,
-                "w",
-                driver="GTiff",
-                height=self.pixel_dimensions,
-                width=self.pixel_dimensions,
-                count=src.count,
-                dtype=d_type,
-                crs=src.crs,
-                transform=transform,
-                nodata=0,
+            output_file_path,
+            "w",
+            driver="GTiff",
+            height=self.pixel_dimensions,
+            width=self.pixel_dimensions,
+            count=src.count,
+            dtype=d_type,
+            crs=src.crs,
+            transform=transform,
+            nodata=0,
         ) as dst:
             dst.write(chip)
 
@@ -223,7 +223,7 @@ class ImageChip:
 
     @staticmethod
     def apply_scaler(
-            array: np.ndarray, scaler_dict: dict[int, dict[str, float]]
+        array: np.ndarray, scaler_dict: dict[int, dict[str, float]]
     ) -> np.ndarray:
         """Standard scales a numpy array based on mean and std values from a dictionary.
 
@@ -330,7 +330,7 @@ class ImageChip:
             1 if len(windows) % batch_size != 0 else 0
         )
         batches = [
-            (i, windows[i * batch_size: (i + 1) * batch_size])
+            (i, windows[i * batch_size : (i + 1) * batch_size])
             for i in range(num_batches)
         ]
 
