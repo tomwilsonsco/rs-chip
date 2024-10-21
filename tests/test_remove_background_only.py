@@ -81,16 +81,16 @@ def test_npz_remove(setup_output_dir):
     )
 
     # how many files initially
-    npz_img_files_init = len(list(out_img_chips.glob("*.npz")))
-    npz_mask_files_init = len(list(out_mask_chips.glob("*.npz")))
+    npz_img_files_init = len(npz_files_to_list(out_img_chips))
+    npz_mask_files_init = len(npz_files_to_list(out_mask_chips))
 
     # remove background
     remover = RemoveBackgroundOnly(background_val=0, non_background_min=100)
     remover.remove_background_only_npz(out_mask_chips, out_img_chips)
 
     # how many files now
-    npz_img_files_final = len(list(out_img_chips.glob("*.npz")))
-    npz_mask_files_final = len(list(out_mask_chips.glob("*.npz")))
+    npz_img_files_final = len(npz_files_to_list(out_img_chips))
+    npz_mask_files_final = len(npz_files_to_list(out_mask_chips))
 
     # run checks
     assert npz_img_files_final < npz_img_files_init, "No img files were removed"
