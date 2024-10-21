@@ -75,11 +75,13 @@ class RemoveBackgroundOnly:
             class_chips_dir (str): Directory containing the chip mask image files to check.
             image_chips_dir (str): Corresponding chip image file directory - if mask is all background, image is removed too.
             image_extn (str, optional): The extension for the image files. Defaults to "tif".
-            masks_prefix (str, optional): Prefix for mask files. Defaults to None. This prefix is removed when checking for equivalent mask to image file.
+            masks_prefix (str, optional): Prefix for mask files. Defaults to None. This prefix is removed when checking for
+            equivalent mask to image file.
             images_prefix (str, optional): As `masks_prefix`. Prefix for image files. Defaults to None.
 
         Raises:
-            FileNotFoundError: If no files with the specified extension are found in the input directory or if a file referenced by a mask does not exist.
+            FileNotFoundError: If no files with the specified extension are found in the input directory or if a file
+            referenced by a mask does not exist.
         """
         class_chips_dir = Path(class_chips_dir)
         image_files = list(class_chips_dir.glob(f"**/*.{image_extn}"))
@@ -118,14 +120,15 @@ class RemoveBackgroundOnly:
         Args:
             class_npz_dir (str): Directory containing the chip mask NPZ files to check.
             image_npz_dir (str): Corresponding chip image NPZ file directory - if mask is all background, image is removed too.
-            masks_prefix (str, optional): Prefix for mask files. Defaults to None. This prefix is removed when checking for equivalent mask to image file.
+            masks_prefix (str, optional): Prefix for mask files. Defaults to None. This prefix is removed when checking for
+            equivalent mask to image file.
             images_prefix (str, optional): As `masks_prefix`. Prefix for image files. Defaults to None.
 
         Raises:
             FileNotFoundError: If no NPZ files are found in the input directory.
         """
         class_npz_dir = Path(class_npz_dir)
-        npz_files = list(class_npz_dir.glob(f"**/*.npz"))
+        npz_files = list(class_npz_dir.glob("**/*.npz"))
         if not npz_files:
             raise FileNotFoundError(f"No npz files found in {class_npz_dir}")
 
