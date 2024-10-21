@@ -330,7 +330,7 @@ class ImageChip:
             1 if len(windows) % batch_size != 0 else 0
         )
         batches = [
-            (i, windows[i * batch_size : (i + 1) * batch_size])
+            (i, windows[i * batch_size : (i + 1) * batch_size])  # noqa: E203
             for i in range(num_batches)
         ]
 
