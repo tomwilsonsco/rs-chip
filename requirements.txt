@@ -1,0 +1,7 @@
+numpy
+rasterio
+geopandas
+pytest
+black
+flake8
+pyproject-flake8
