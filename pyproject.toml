@@ -5,9 +5,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "rschip"
 version = "0.1.0"
-description = "Tile or chip large satellite images for use with deep learning models"
-readme = "README.md"
-readme-content-type = "text/markdown"
+description = "Prepare satellite images and training data for use with deep learning models"
+readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "MIT" }
 authors = [
     { name = "Your Name", email = "thomaswilson81@gmail.com" },
