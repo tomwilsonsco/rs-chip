@@ -2,8 +2,7 @@
 ![PyPI version](https://img.shields.io/pypi/v/rschip)
 ![License](https://img.shields.io/github/license/tomwilsonsco/rs-chip)
 ![Build Status](https://img.shields.io/github/actions/workflow/status/tomwilsonsco/rs-chip/tests.yml?branch=main)
-![Coverage Status](https://img.shields.io/codecov/c/github/tomwilsonsco/rs-chip)
-
+![codecov](https://codecov.io/github/tomwilsonsco/rs-chip/graph/badge.svg?token=W27NY55T4B)(https://codecov.io/github/tomwilsonsco/rs-chip)
 Split satellite images into small, fixed-sized tiles, for input into convolutional neural networks (cnn), or vision transformers (ViT) such as [Segment Anything](https://arxiv.org/abs/2304.02643).
 
 ## Features
