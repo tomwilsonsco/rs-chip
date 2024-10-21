@@ -1,0 +1,8 @@
+numpy
+rasterio
+geopandas
+pytest
+pytest-cov
+codecov
+black
+flake8

@@ -131,15 +131,13 @@ class SegmentationMask:
                 input_features.geometry, input_features[self.class_field]
             )
         )
-        mask = np.zeros(image_shape, dtype=np.uint8)
-        with rio.open(self.input_image_path) as src:
-            mask = rasterio.features.rasterize(
-                shapes=shapes,
-                out_shape=image_shape,
-                transform=image_transform,
-                fill=0,
-                dtype=np.uint8,
-            )
+        mask = rasterio.features.rasterize(
+            shapes=shapes,
+            out_shape=image_shape,
+            transform=image_transform,
+            fill=0,
+            dtype=np.uint8,
+        )
         return mask
 
     def _write_mask(self, mask: np.ndarray) -> None:
