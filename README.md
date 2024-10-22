@@ -77,11 +77,12 @@ seg_mask.create_mask()
 # Chip the segmentation image to match satellite image
 image_chipper = ImageChip(
     input_image_path="path/to/output_mask.tif",
-    output_dir="path/to/output_directory_mask",
+    output_path="path/to/output_directory_mask",
     output_name="large_image",
     pixel_dimensions=128,
     offset=64,
     output_format="tif",
+    standard_scale=False,
 )
 image_chipper.chip_image()
 ```
