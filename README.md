@@ -44,7 +44,7 @@ image_chipper = ImageChip(
 )
 
 # Generate chips
-image_chipper.create_chips()
+image_chipper.chip_image()
 ```
 With the `output_format` parameter set to `"tif"`, each resulting tile is named using a suffix that represents the bottom left `(x, y)`
 pixel coordinate position. If output_format is set to `"npz"`, the resulting .npz zip file contains a dictionary of arrays, 
@@ -83,7 +83,7 @@ image_chipper = ImageChip(
     offset=64,
     output_format="tif",
 )
-image_chipper.create_chips()
+image_chipper.chip_image()
 ```
 
 ### 3. RemoveBackgroundOnly Class
