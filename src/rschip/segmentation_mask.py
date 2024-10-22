@@ -152,3 +152,4 @@ class SegmentationMask:
         meta.update({"count": 1, "dtype": "uint8", "compress": "lzw"})
         with rio.open(self.output_path, "w", **meta) as dst:
             dst.write(mask, 1)
+            print(f"written {self.input_image_path}")
