@@ -91,15 +91,15 @@ image_chipper.chip_image()
 The `RemoveBackgroundOnly` class provides functionality to remove image chips (either could be tifs or numpy arrays inside npz file) that contain only background. Filtering out images only containing background helps to prepare a dataset more suitable for training models.
  
 ```python
-from rschip.remove_background_only import RemoveBackgroundOnly
+from rschip import RemoveBackgroundOnly
 
 # Initialize the RemoveBackgroundOnly instance
 remover = RemoveBackgroundOnly(background_val=0, non_background_min=100)
 
 # Remove chips with only background
 remover.remove_background_only_files(
-    class_chips_dir='path/to/mask_directory',
-    image_chips_dir='path/to/image_directory'
+    class_chips_dir="path/to/mask_directory",
+    image_chips_dir="path/to/image_directory"
 )
 ```
 The default assumption is that image and mask equivalent have the same file names as shown in example 2. above. If that is
