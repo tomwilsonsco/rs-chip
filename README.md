@@ -37,7 +37,7 @@ from rschip import ImageChip
 # Initialize the ImageChip instance for 128 by 128 tiles
 image_chipper = ImageChip(
     input_image_path="path/to/large_image.tif",
-    output_dir="path/to/output_directory_image",
+    output_path="path/to/output_directory_image",
     pixel_dimensions=128,
     offset=64,
     output_format="tif",
