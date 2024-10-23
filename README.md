@@ -9,8 +9,8 @@ transformers (ViT) such as [Segment Anything](https://arxiv.org/abs/2304.02643).
 
 ## Features
 
-- **Tile Satellite Images**: Split large satellite images into smaller chips of specified dimensions. Includes option to 
-  sample pixels for standard scaling and write a scaler object to use when making predictions from a trained model.
+- **Tile Satellite Images**: Split large satellite images into smaller chips of specified dimensions. Can min-max normalise 
+  or standard scale before writing chips as required.
 - **Mask Segmentation**: Generate segmentation mask images from geopackage or shapefile features for supervised 
   segmentation, e.g using [U-Net](https://arxiv.org/abs/1505.04597).
 - **Remove Background Chips**: Filter out image chips containing only background. Useful for when preparing training 
@@ -42,6 +42,10 @@ image_chipper = ImageChip(
     offset=64,
     output_format="tif",
 )
+
+# set a min max normaliser 
+# e.g for 16 bit Sentinel 2 might use
+image_chipper.set_normaliser(min_val=1000, max_val=3000)
 
 # Generate chips
 image_chipper.chip_image()

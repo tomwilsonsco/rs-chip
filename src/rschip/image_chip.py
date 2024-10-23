@@ -17,9 +17,6 @@ class ImageChip:
         output_name (str): The stem name of each chip. Optional and defaults to image file name in `input_image_path`.
         pixel_dimensions (int): The height and width of each tile in pixels. Defaults to 128.
         offset (int): The offset used when creating tiles, to define the step size. Defaults to 64.
-        standard_scale (bool): Whether to standard scale from a sample of pixel values. Defaults to True.
-        sample_size (int): Number of pixel coordinates to sample for standard scaling. Defaults to 10000.
-        scaler_source (Path or None): Path to a pickle file or dictionary for scaling parameters. Defaults to None.
         use_multiprocessing (bool): Whether to use multiprocessing for chipping. Defaults to True.
         output_format (str): The format of the output files, either 'tif' or 'npz'.
                              If tif then tif file written per tile window. If npz then `batch_size` batches
@@ -35,9 +32,6 @@ class ImageChip:
         output_name=None,
         pixel_dimensions=128,
         offset=64,
-        standard_scale=True,
-        sample_size=10000,
-        scaler_source=None,
         use_multiprocessing=True,
         output_format="tif",
         max_batch_size=10,
@@ -47,10 +41,8 @@ class ImageChip:
         self.output_name = output_name if output_name else Path(input_image_path).stem
         self.pixel_dimensions = pixel_dimensions
         self.offset = offset
-        self.standard_scale = standard_scale
-        self.sample_size = sample_size
-        self.scaler_source = scaler_source
-        self.scaler = None
+        self.standard_scaler = None
+        self.normaliser = None
         self.use_multiprocessing = use_multiprocessing
         self.output_format = output_format
         self.max_batch_size = max_batch_size
@@ -137,7 +129,62 @@ class ImageChip:
             output_file_name = f"{output_name}_{x}_{y}.tif"
         return self.output_path / output_file_name
 
-    def sample_to_scaler(self) -> dict:
+    def set_scaler(self, sample_size=10000):
+        """Sets the standard scaler to be used for standard scaling each array when chipping.
+
+        A specified number of pixels are sampled from image specified in `input_image_path` to determine
+        per band mean and standard deviation, stored in a dictionary, used in `apply_scaler`.
+
+        Args:
+            sample_size (int): The number of pixels to sample from the pre-chipped image to determine per band
+            mean and standard deviation.
+        """
+        if self.normaliser is not None:
+            print("normaliser will be set to None")
+            self.normaliser = None
+        self.standard_scaler = self.sample_to_scaler(sample_size=sample_size)
+
+    def set_normaliser(self, min_val=None, max_val=None):
+        """Sets the min-max normaliser values to be used to min-max normalise each array when chipping.
+
+        Sets the min and max values used by the `apply_normaliser` method.
+
+        Args:
+            min_val (int or float): The minimum value to use for normalisation.
+            max_val (int or float): The maximum value to use for normalisation.
+
+        """
+        if min_val is None or max_val is None:
+            print(
+                "normaliser set to None as need both min_val and max_val to be specified"
+            )
+            self.normaliser = None
+            return
+        if self.standard_scaler is not None:
+            print("standard_scaler will be set to None")
+            self.standard_scaler = None
+        self.normaliser = {"min_val": min_val, "max_val": max_val}
+
+    @staticmethod
+    def apply_normaliser(array: np.ndarray, normaliser_dict: dict) -> np.ndarray:
+        """Normalises a numpy array based on min and max values from a dictionary.
+
+        Dict can be created from `set_normaliser`.
+
+        Args:
+            array (np.ndarray): A numpy array of shape (m, n, n), where m is the length of the first dimension.
+            normaliser_dict (dict): A dictionary containing 'min_val' and 'max_val'. The array values are clipped to this range
+            then min-max normalised.
+
+        Returns:
+            np.ndarray: A normalised numpy array of the same shape as the input array.
+        """
+        min_val = normaliser_dict["min_val"]
+        max_val = normaliser_dict["max_val"]
+        array = np.clip(array, min_val, max_val)
+        return (array - min_val) / (min_val - max_val)
+
+    def sample_to_scaler(self, sample_size: int) -> dict:
         """
         Samples pixel values from an image at random coordinates and calculates the
         mean and standard deviation for each band.
@@ -157,8 +204,8 @@ class ImageChip:
             # Get bounds of the image
             left, bottom, right, top = src.bounds
             # Generate random coordinates within the image bounds
-            xs = np.random.uniform(left, right, self.sample_size)
-            ys = np.random.uniform(bottom, top, self.sample_size)
+            xs = np.random.uniform(left, right, sample_size)
+            ys = np.random.uniform(bottom, top, sample_size)
 
             # Prepare a list of coordinates
             coordinates = list(zip(xs, ys))
@@ -183,7 +230,7 @@ class ImageChip:
                 stats_dict[band_index] = band_vals
 
         # Create the pickle file path
-        pickle_file_name = f"{self.input_image_path.stem}_{self.sample_size}.pkl"
+        pickle_file_name = f"{self.input_image_path.stem}_{sample_size}.pkl"
         output_dir = Path(self.output_path)
         pickle_file_path = output_dir / pickle_file_name
 
@@ -192,34 +239,6 @@ class ImageChip:
             pickle.dump(stats_dict, f)
 
         return stats_dict
-
-    def load_scaler(self) -> np.ndarray:
-        """Load scaler parameters from a provided source.
-
-        This function accepts a source for the scaling parameters in the form of a dictionary
-        or a string path to a pickle file. It returns a dictionary containing the scaler parameters.
-
-        Returns:
-            dict: A dictionary containing the scaling parameters.
-
-        Raises:
-            ValueError: If `scaler_source` is neither a dictionary nor a string pointing to
-                a valid pickle file, or if the file does not exist.
-        """
-        # Load the scaling parameters
-        if isinstance(self.scaler_source, dict):
-            scaler_dict = self.scaler_source
-        elif isinstance(self.scaler_source, str):
-            try:
-                with open(self.scaler_source, "rb") as f:
-                    scaler_dict = pickle.load(f)
-            except FileNotFoundError:
-                raise ValueError(f"The path {self.scaler_source} does not exist.")
-        else:
-            raise ValueError(
-                "scaler_source must be a dictionary or a valid path to a pickle file."
-            )
-        return scaler_dict
 
     @staticmethod
     def apply_scaler(
@@ -294,8 +313,10 @@ class ImageChip:
         with rio.open(self.input_image_path) as src:
             for x, y, window in batch:
                 chip = src.read(window=window, boundless=True, fill_value=0)
-                if self.standard_scale:
-                    chip = self.apply_scaler(chip, self.scaler)
+                if self.standard_scaler:
+                    chip = self.apply_scaler(chip, self.standard_scaler)
+                if self.normaliser:
+                    chip = self.apply_normaliser(chip, self.normaliser)
 
                 if self.output_format == "tif":
                     output_file_path = self._output_file(x, y)
@@ -355,13 +376,6 @@ class ImageChip:
 
         # Create output directory if it does not exist
         self.output_path.mkdir(parents=True, exist_ok=True)
-
-        # Create or load standard scaler dictionary if required
-        if self.standard_scale:
-            if self.scaler_source is None:
-                self.scaler = self.sample_to_scaler()
-            else:
-                self.scaler = self.load_scaler()
 
         with rio.open(self.input_image_path) as src:
             windows = list(self._generate_windows(src))
