@@ -18,25 +18,26 @@ def chip_image_run(
     input_image_path="tests/data/test_img.tif",
     pixel_dimensions=128,
     offset=64,
-    standard_scale=True,
-    sample_size=10000,
-    scaler_source=None,
     use_multiprocessing=True,
     output_format="tif",
     max_batch_size=10,
+    scaler=False,
+    normaliser=False,
 ):
     image_chip = ImageChip(
         input_image_path=input_image_path,
         output_path=output_path,
         pixel_dimensions=pixel_dimensions,
         offset=offset,
-        standard_scale=standard_scale,
-        sample_size=sample_size,
-        scaler_source=scaler_source,
         use_multiprocessing=use_multiprocessing,
         output_format=output_format,
         max_batch_size=max_batch_size,
     )
+    if scaler:
+        image_chip.set_scaler()
+    if normaliser:
+        image_chip.set_normaliser(min_val=1000, max_val=3000)
+
     image_chip.chip_image()
 
 
@@ -86,9 +87,8 @@ def test_image_chip(setup_output_dir):
 
 def test_array_equality(setup_output_dir):
     out_dir = setup_output_dir
-    scaler_fp = f"{out_dir}/test_img_10000.pkl"
     chip_image_run(output_path=out_dir, output_format="tif")
-    chip_image_run(output_path=out_dir, output_format="npz", scaler_source=scaler_fp)
+    chip_image_run(output_path=out_dir, output_format="npz")
 
     # Load one NPZ and corresponding TIFF file to compare arrays
     test_key, npz_arr = load_npz(out_dir / "batch_0.npz")
@@ -183,6 +183,28 @@ def test_tile_count(setup_output_dir):
     assert (
         len(tif_files) == expected_tile_count
     ), f"Expected {expected_tile_count} tiles, but found {len(tif_files)}."
+
+
+def test_normalising(setup_output_dir):
+    out_dir = setup_output_dir
+
+    chip_image_run(output_path=out_dir, output_format="tif", normaliser=True)
+
+    with rio.open(tif_files_to_list(out_dir)[0]) as f:
+        test_array = f.read()
+    max_val = np.max(test_array)
+    assert max_val <= 1, "normalising not worked as values > 1 in array."
+
+
+def test_standard_scaling(setup_output_dir):
+    out_dir = setup_output_dir
+
+    chip_image_run(output_path=out_dir, output_format="tif", scaler=True)
+
+    with rio.open(tif_files_to_list(out_dir)[0]) as f:
+        test_array = f.read()
+    mean_val = np.mean(test_array)
+    assert mean_val <= 10, "standard scaling not worked as mean > 10 in array."
 
 
 if __name__ == "__main__":
