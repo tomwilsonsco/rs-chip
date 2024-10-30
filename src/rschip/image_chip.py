@@ -16,7 +16,7 @@ class ImageChip:
         output_path (Path): The directory path where the output tiles will be saved.
         output_name (str): The stem name of each chip. Optional and defaults to image file name in `input_image_path`.
         pixel_dimensions (int): The height and width of each tile in pixels. Defaults to 128.
-        offset (int): The offset used when creating tiles, to define the step size. Defaults to 64.
+        offset (int): The offset used when creating tiles, i.e. the step size. Defaults to 64.
         use_multiprocessing (bool): Whether to use multiprocessing for chipping. Defaults to True.
         output_format (str): The format of the output files, either 'tif' or 'npz'.
                              If tif then tif file written per tile window. If npz then `batch_size` batches
@@ -34,7 +34,7 @@ class ImageChip:
         offset=64,
         use_multiprocessing=True,
         output_format="tif",
-        max_batch_size=10,
+        max_batch_size=1000,
     ):
         self.input_image_path = Path(input_image_path)
         self.output_path = Path(output_path) if output_path else Path(input_image_path)
@@ -129,69 +129,166 @@ class ImageChip:
             output_file_name = f"{output_name}_{x}_{y}.tif"
         return self.output_path / output_file_name
 
-    def set_scaler(self, sample_size=10000):
+    def set_scaler(self, sample_size=10000, write_file=True, write_path=None):
         """Sets the standard scaler to be used for standard scaling each array when chipping.
 
-        A specified number of pixels are sampled from image specified in `input_image_path` to determine
-        per band mean and standard deviation, stored in a dictionary, used in `apply_scaler`.
+        A specified number of pixels are sampled from the image set in `ImageChip.input_image_path`.
+        This derives a per band mean and standard deviation, stored in a dictionary and used in `apply_scaler`.
+
+        The dictionary is (optionally) written as a pickle file. The pickle file is a way to retrieve the scaler applied to
+        images during training a model for making predictions from that model.
 
         Args:
             sample_size (int): The number of pixels to sample from the pre-chipped image to determine per band
             mean and standard deviation.
+            write_file (bool): If True a pickle file is written containing the scaler dictionary.
+            write_path (string): The directory and filename (.pkl) where the scaler will be written if `write_file`.
+            None by default when the pickle file is written to the same dir as ImageChip.input_image_path with file name
+            <image_file>_scaler_<sample_size>.pkl.
         """
         if self.normaliser is not None:
             print("normaliser will be set to None")
             self.normaliser = None
         self.standard_scaler = self.sample_to_scaler(sample_size=sample_size)
+        if write_file:
+            if not write_path:
+                # Create the pickle file path
+                pickle_file_name = (
+                    f"{self.input_image_path.stem}_scaler_{sample_size}.pkl"
+                )
+                output_dir = Path(self.output_path)
+                pickle_file_path = output_dir / pickle_file_name
+            else:
+                pickle_file_path = write_path
+            # Save the dictionary to a pickle file
+            with open(pickle_file_path, "wb") as f:
+                pickle.dump(self.standard_scaler, f)
+                print(f"Written scaler to {pickle_file_path}")
 
-    def set_normaliser(self, min_val=None, max_val=None):
-        """Sets the min-max normaliser values to be used to min-max normalise each array when chipping.
-
-        Sets the min and max values used by the `apply_normaliser` method.
+    def _validate_normaliser_inputs(self, value, name):
+        """
+        Validate if the input value is either a number or a list of numbers.
 
         Args:
-            min_val (int or float): The minimum value to use for normalisation.
-            max_val (int or float): The maximum value to use for normalisation.
+            value (int, float, list): The value to be validated.
+            name (str): The name of the value being validated.
+
+        Raises:
+            ValueError: If value is not valid.
+        """
+        with rio.open(self.input_image_path) as f:
+            bands = f.profile["count"]
+        if isinstance(value, list):
+            if len(value) != bands:
+                raise ValueError(
+                    f"{name} list {value} must be the same length as the number of bands in the image ({bands})."
+                )
+            elif not all(isinstance(i, (int, float)) for i in value):
+                raise ValueError(
+                    f"{name} list {value} must only contain integer or float numbers."
+                )
+        elif isinstance(value, (int, float)):
+            return [value] * bands
+        else:
+            raise ValueError(f"{name} must be either list, float, or int")
+        return value
+
+    def set_normaliser(
+        self, min_val=None, max_val=None, write_file=True, write_path=None
+    ):
+        """Sets the min-max normaliser values to be used to min-max normalise each array when chipping.
+
+        Sets the min and max values in a dictionary used by the `apply_normaliser` method. If single min and max
+        values as input then these values are repeated in a list for each band in ImageChip.input_image_path image.
+
+        The dictionary is (optionally) written as a pickle file. The pickle file is a way to retrieve the normaliser
+        min max ranges applied to images during training a model for making predictions from that model.
+
+        Args:
+            min_val (int, float, or list): The minimum value to use for normalisation. If a list, should be
+            a list with one value for each band in the image and the list values should be in the index order of the bands.
+            max_val (int, float, or list): The maximum value to use for normalisation. If a list, should be
+            a list with one value for each band in the image and the list values should be in the index order of the bands.
+            write_file (bool): If True a pickle file is written containing the normaliser dictionary.
+            write_path (string): The directory and filename (.pkl) where the scaler will be written if `write_file`.
+            None by default when the file path is written to the same dir as ImageChip.input_image_path and file name
+            <image_file>_scaler_<sample_size>.pkl.
 
         """
         if min_val is None or max_val is None:
             print(
-                "normaliser set to None as need both min_val and max_val to be specified"
+                "normaliser set to None as both min_val and max_val need to be specified"
             )
             self.normaliser = None
             return
+
+        # Validate min_val and max_val
+        min_val = self._validate_normaliser_inputs(min_val, "min_val")
+        max_val = self._validate_normaliser_inputs(max_val, "max_val")
+
         if self.standard_scaler is not None:
             print("standard_scaler will be set to None")
             self.standard_scaler = None
+
         self.normaliser = {"min_val": min_val, "max_val": max_val}
+        print(
+            f"Set normaliser as {self.normaliser}. There are {len(min_val)} min and max values, one for each band."
+        )
+
+        if write_file:
+            if not write_path:
+                # Create the pickle file path
+                pickle_file_name = f"{self.input_image_path.stem}_normaliser.pkl"
+                output_dir = Path(self.output_path)
+                pickle_file_path = output_dir / pickle_file_name
+            else:
+                pickle_file_path = write_path
+                # Save the dictionary to a pickle file
+            with open(pickle_file_path, "wb") as f:
+                pickle.dump(self.normaliser, f)
+                print(f"Written normaliser to {pickle_file_path}")
 
     @staticmethod
     def apply_normaliser(array: np.ndarray, normaliser_dict: dict) -> np.ndarray:
-        """Normalises a numpy array based on min and max values from a dictionary.
-
-        Dict can be created from `set_normaliser`.
+        """Normalises a numpy array based on min and max values created by `set_normaliser`.
 
         Args:
             array (np.ndarray): A numpy array of shape (m, n, n), where m is the length of the first dimension.
-            normaliser_dict (dict): A dictionary containing 'min_val' and 'max_val'. The array values are clipped to this range
-            then min-max normalised.
+            normaliser_dict (dict): A dictionary containing 'min_val' and 'max_val', which are
+             lists of min and max values which must be of the same length as array first dimension.
+            per band. The pixel values in each band are clipped to their corresponding min-max range and then normalised.
+
 
         Returns:
             np.ndarray: A normalised numpy array of the same shape as the input array.
         """
-        min_val = normaliser_dict["min_val"]
-        max_val = normaliser_dict["max_val"]
-        array = np.clip(array, min_val, max_val)
-        return (array - min_val) / (min_val - max_val)
+        min_vals = normaliser_dict["min_val"]
+        max_vals = normaliser_dict["max_val"]
+        if array.shape[0] != len(min_vals):
+            raise ValueError(
+                f"Array band dimension {array.shape[0]} does not match length of normaliser clip values."
+            )
+        normalised_array = np.zeros_like(array, dtype=np.float32)
+
+        for i in range(array.shape[0]):
+            min_val = min_vals[i]
+            max_val = max_vals[i]
+            # Apply normalising only to non-zero values (assuming 0 is nodata)
+            mask = array[i, :, :] != 0
+            clipped = np.clip(array[i, :, :], min_val, max_val)
+            normalised_array[i, :, :] = np.where(
+                mask, (clipped - min_val) / (max_val - min_val), 0
+            )
+
+        return normalised_array
 
     def sample_to_scaler(self, sample_size: int) -> dict:
         """
-        Samples pixel values from an image at random coordinates and calculates the
+        Samples pixel values from an image at a sample of random coordinates and calculates the
         mean and standard deviation for each band.
 
-        The aim is to produce a scaler dictionary that can be used for standard scaling.
-
-        The dictionary is written as a pickle file to the same directory as the input image.
+        Args:
+             sample_size (int): How many random points to sample pixel values for each band to derive mean and std dev.
 
         Returns:
             dict: A dictionary with keys as '<band_name>_mean' and '<band_name>_std'
@@ -228,15 +325,6 @@ class ImageChip:
                     "std": np.std(valid_band_pixel_values),
                 }
                 stats_dict[band_index] = band_vals
-
-        # Create the pickle file path
-        pickle_file_name = f"{self.input_image_path.stem}_{sample_size}.pkl"
-        output_dir = Path(self.output_path)
-        pickle_file_path = output_dir / pickle_file_name
-
-        # Save the dictionary to a pickle file
-        with open(pickle_file_path, "wb") as f:
-            pickle.dump(stats_dict, f)
 
         return stats_dict
 
