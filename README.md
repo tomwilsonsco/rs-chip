@@ -44,8 +44,8 @@ image_chipper = ImageChip(
 )
 
 # set a min max normaliser 
-# e.g for 16 bit Sentinel 2 might use
-image_chipper.set_normaliser(min_val=1000, max_val=3000)
+# e.g for 16 bit Sentinel 2 RGB might use
+image_chipper.set_normaliser(min_val=500, max_val=3000)
 
 # Generate chips
 image_chipper.chip_image()
