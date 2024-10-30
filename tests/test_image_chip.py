@@ -5,6 +5,8 @@ import rasterio as rio
 from pathlib import Path
 import tempfile
 from rschip import ImageChip
+import pickle
+import re
 
 
 @pytest.fixture(scope="function")
@@ -77,7 +79,7 @@ def test_image_chip(setup_output_dir):
     tif_files = list(out_dir.glob("*.tif"))
     assert len(tif_files) > 0, "No TIFF files were created."
 
-    # Test chipping with NPZ output using the same scaler file
+    # Test chipping with NPZ output
     chip_image_run(output_path=out_dir, output_format="npz")
 
     # Verify that NPZ files were created
@@ -205,6 +207,136 @@ def test_standard_scaling(setup_output_dir):
         test_array = f.read()
     mean_val = np.mean(test_array)
     assert mean_val <= 10, "standard scaling not worked as mean > 10 in array."
+
+
+def test_validate_normaliser_inputs_valid_float():
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path="tmp"
+    )
+    result = image_chip._validate_normaliser_inputs(5.0, "min_val")
+    assert result == [5.0, 5.0]
+
+
+def test_validate_normaliser_inputs_valid_list():
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path="tmp"
+    )
+    value = [1.0, 2.0]
+    result = image_chip._validate_normaliser_inputs(value, "min_val")
+    assert result == value
+
+
+def test_validate_normaliser_inputs_invalid_list_length():
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path="tmp"
+    )
+    value = [1.0]
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "min_val list [1.0] must be the same length as the number of bands in the image (2)."
+        ),
+    ):
+        image_chip._validate_normaliser_inputs(value, "min_val")
+
+
+def test_validate_normaliser_inputs_invalid_list_element():
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path="tmp"
+    )
+    value = [1.0, "a"]
+    with pytest.raises(
+        ValueError, match="min_val list .* must only contain integer or float numbers"
+    ):
+        image_chip._validate_normaliser_inputs(value, "min_val")
+
+
+def test_validate_normaliser_inputs_invalid_type():
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path="tmp"
+    )
+    value = {"key": "value"}
+    with pytest.raises(ValueError, match="min_val must be either list, float, or int"):
+        image_chip._validate_normaliser_inputs(value, "min_val")
+
+
+def test_set_normaliser(setup_output_dir):
+    out_dir = setup_output_dir
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path=out_dir
+    )
+    image_chip.set_normaliser(min_val=1.0, max_val=5.0)
+    assert image_chip.normaliser == {"min_val": [1.0, 1.0], "max_val": [5.0, 5.0]}
+
+
+def test_pickle_default_normaliser(setup_output_dir):
+    out_dir = setup_output_dir
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path=out_dir
+    )
+    image_chip.set_normaliser(min_val=1.0, max_val=5.0)
+    pickle_file_name = f"{image_chip.input_image_path.stem}_normaliser.pkl"
+    output_dir = Path(image_chip.output_path)
+    pickle_file_path = output_dir / pickle_file_name
+    with open(pickle_file_path, "rb") as f:
+        file_normaliser = pickle.load(f)
+    assert image_chip.normaliser == file_normaliser
+
+
+def test_pickle_custom_normaliser(setup_output_dir):
+    out_dir = setup_output_dir
+    custom_pickle_dir = out_dir / "normaliser_test.pkl"
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path=out_dir
+    )
+    image_chip.set_normaliser(min_val=1.0, max_val=5.0, write_path=custom_pickle_dir)
+    with open(custom_pickle_dir, "rb") as f:
+        file_normaliser = pickle.load(f)
+    assert image_chip.normaliser == file_normaliser
+
+
+def test_pickle_default_scaler(setup_output_dir):
+    out_dir = setup_output_dir
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path=out_dir
+    )
+    image_chip.set_scaler()
+    pickle_file_name = f"{image_chip.input_image_path.stem}_scaler_{10000}.pkl"
+    output_dir = Path(image_chip.output_path)
+    pickle_file_path = output_dir / pickle_file_name
+    with open(pickle_file_path, "rb") as f:
+        file_scaler = pickle.load(f)
+    assert image_chip.standard_scaler == file_scaler
+
+
+def test_pickle_custom_scaler(setup_output_dir):
+    out_dir = setup_output_dir
+    custom_pickle_dir = out_dir / "scaler_test.pkl"
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path=out_dir
+    )
+    image_chip.set_scaler(write_path=custom_pickle_dir)
+    with open(custom_pickle_dir, "rb") as f:
+        file_scaler = pickle.load(f)
+    assert image_chip.standard_scaler == file_scaler
+
+
+def test_apply_normaliser_valid():
+    array = np.array([[[1, 2], [3, 4]]], dtype=np.float32)
+    normaliser_dict = {"min_val": [1], "max_val": [3]}
+    expected_output = np.array([[[0.0, 0.5], [1.0, 1.0]]], dtype=np.float32)
+    result = ImageChip.apply_normaliser(array, normaliser_dict)
+    np.testing.assert_array_almost_equal(result, expected_output)
+
+
+def test_apply_normaliser_invalid_band_length():
+    array = np.array([[[1, 2], [3, 4]]], dtype=np.float32)
+    normaliser_dict = {"min_val": [1, 4], "max_val": [2, 5]}
+    with pytest.raises(
+        ValueError,
+        match="Array band dimension .* does not match length of normaliser clip values",
+    ):
+        ImageChip.apply_normaliser(array, normaliser_dict)
 
 
 if __name__ == "__main__":
