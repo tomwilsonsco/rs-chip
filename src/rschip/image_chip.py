@@ -91,7 +91,7 @@ class ImageChip:
             dtype=d_type,
             crs=src.crs,
             transform=transform,
-            nodata=0,
+            nodata=None,
         ) as dst:
             dst.write(chip)
 
