@@ -55,6 +55,10 @@ class ImageChip:
             raise ValueError("pixel_dimensions must be a positive integer")
         if self.offset <= 0:
             raise ValueError("offset must be a positive integer")
+        if self.output_format not in ("tif", "npz"):
+            raise ValueError(
+                f"output_format must be 'tif' or 'npz', got '{self.output_format}'"
+            )
 
     def _read_image_metadata(self) -> None:
         """
