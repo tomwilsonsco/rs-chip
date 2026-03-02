@@ -200,8 +200,7 @@ class ImageChip:
         Raises:
             ValueError: If value is not valid.
         """
-        with rio.open(self.input_image_path) as f:
-            bands = f.profile["count"]
+        bands = self._band_count
         if isinstance(value, list):
             if len(value) != bands:
                 raise ValueError(
