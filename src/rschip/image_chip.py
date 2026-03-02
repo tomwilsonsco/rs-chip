@@ -37,6 +37,7 @@ class ImageChip:
         output_format="tif",
         max_batch_size=1000,
     ):
+
         self.input_image_path = Path(input_image_path)
         self.output_path = Path(output_path) if output_path else Path(input_image_path)
         self.output_name = output_name if output_name else Path(input_image_path).stem
@@ -47,7 +48,13 @@ class ImageChip:
         self.use_multiprocessing = use_multiprocessing
         self.output_format = output_format
         self.max_batch_size = max_batch_size
+        if not self.input_image_path.exists():
+            raise FileNotFoundError(f"Input image not found: {self.input_image_path}")
         self._read_image_metadata()
+        if self.pixel_dimensions <= 0:
+            raise ValueError("pixel_dimensions must be a positive integer")
+        if self.offset <= 0:
+            raise ValueError("offset must be a positive integer")
 
     def _read_image_metadata(self) -> None:
         """
