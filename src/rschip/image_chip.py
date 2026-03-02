@@ -122,11 +122,9 @@ class ImageChip:
         Returns:
             Path: The full path (as a `Path` object) where the chip will be saved, including the generated file name.
         """
-        if self.output_name is None:
-            output_file_name = f"{self.input_image_path.stem}_{x}_{y}.tif"
-        else:
-            output_name = self.output_name.replace(".tif", "")
-            output_file_name = f"{output_name}_{x}_{y}.tif"
+        
+        output_name = self.output_name.replace(".tif", "")
+        output_file_name = f"{output_name}_{x}_{y}.tif"
         return self.output_path / output_file_name
 
     def set_scaler(self, sample_size=10000, write_file=True, write_path=None):
