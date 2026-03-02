@@ -1,4 +1,5 @@
 from pathlib import Path
+import warnings
 import rasterio as rio
 from rasterio.windows import Window
 import numpy as np
@@ -46,6 +47,31 @@ class ImageChip:
         self.use_multiprocessing = use_multiprocessing
         self.output_format = output_format
         self.max_batch_size = max_batch_size
+        self._read_image_metadata()
+
+    def _read_image_metadata(self) -> None:
+        """
+        Read image profile metadata on initialisation.
+
+        Sets self.nodata_val from the imag nodata property. Set to 0 with a warning
+        if no value set.
+        Sets self._band_count for use in band validation.
+        """
+        with rio.open(self.input_image_path) as src:
+            self._band_count = src.count
+            nodata = src.nodata
+
+        if nodata is not None:
+            self.nodata_val = nodata
+        else:
+            self.nodata_val = 0
+            warnings.warn(
+                f"No nodata value found in {self.input_image_path.name}. "
+                "Defaulting to 0. If 0 is a valid pixel value in your image, "
+                "scaling and normalisation will incorrectly treat those pixels as nodata.",
+                UserWarning,
+                stacklevel=2,
+            )
 
     def _generate_windows(self, src):
         """
@@ -122,7 +148,7 @@ class ImageChip:
         Returns:
             Path: The full path (as a `Path` object) where the chip will be saved, including the generated file name.
         """
-        
+
         output_name = self.output_name.replace(".tif", "")
         output_file_name = f"{output_name}_{x}_{y}.tif"
         return self.output_path / output_file_name
@@ -246,8 +272,7 @@ class ImageChip:
                 pickle.dump(self.normaliser, f)
                 print(f"Written normaliser to {pickle_file_path}")
 
-    @staticmethod
-    def apply_normaliser(array: np.ndarray, normaliser_dict: dict) -> np.ndarray:
+    def apply_normaliser(self, array: np.ndarray, normaliser_dict: dict) -> np.ndarray:
         """Normalises a numpy array based on min and max values created by `set_normaliser`.
 
         Args:
@@ -271,8 +296,7 @@ class ImageChip:
         for i in range(array.shape[0]):
             min_val = min_vals[i]
             max_val = max_vals[i]
-            # Apply normalising only to non-zero values (assuming 0 is nodata)
-            mask = array[i, :, :] != 0
+            mask = array[i, :, :] != self.nodata_val
             clipped = np.clip(array[i, :, :], min_val, max_val)
             normalised_array[i, :, :] = np.where(
                 mask, (clipped - min_val) / (max_val - min_val), 0
@@ -326,9 +350,8 @@ class ImageChip:
 
         return stats_dict
 
-    @staticmethod
     def apply_scaler(
-        array: np.ndarray, scaler_dict: dict[int, dict[str, float]]
+        self, array: np.ndarray, scaler_dict: dict[int, dict[str, float]]
     ) -> np.ndarray:
         """Standard scales a numpy array based on mean and std values from a dictionary.
 
@@ -352,7 +375,7 @@ class ImageChip:
             mean = band_info["mean"]
             std = band_info["std"]
             # Apply scaling only to non-zero values (assuming 0 is nodata)
-            mask = array[i, :, :] != 0
+            mask = array[i, :, :] != self.nodata_val
             scaled_array[i, :, :] = np.where(mask, (array[i, :, :] - mean) / std, 0)
         return scaled_array
 
