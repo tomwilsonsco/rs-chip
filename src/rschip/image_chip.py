@@ -65,7 +65,7 @@ class ImageChip:
         """
         Read image profile metadata on initialisation.
 
-        Sets self.nodata_val from the imag nodata property. Set to 0 with a warning
+        Sets self.nodata_val from the image nodata property. Set to 0 with a warning
         if no value set.
         Sets self._band_count for use in band validation.
         """
