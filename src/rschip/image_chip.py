@@ -117,7 +117,7 @@ class ImageChip:
             dtype=d_type,
             crs=src.crs,
             transform=transform,
-            nodata=None,
+            nodata=self.nodata_val,
         ) as dst:
             dst.write(chip)
 
@@ -339,6 +339,7 @@ class ImageChip:
                 band_pixel_values = pixel_values[:, band_index]
                 valid_band_pixel_values = band_pixel_values[
                     ~np.isnan(band_pixel_values)
+                    & (band_pixel_values != self.nodata_val)
                 ]
                 band_vals = {
                     "band_name": band_names[band_index],
@@ -420,7 +421,9 @@ class ImageChip:
         out = {}
         with rio.open(self.input_image_path) as src:
             for x, y, window in batch:
-                chip = src.read(window=window, boundless=True, fill_value=0)
+                chip = src.read(
+                    window=window, boundless=True, fill_value=self.nodata_val
+                )
                 if self.standard_scaler:
                     chip = self.apply_scaler(chip, self.standard_scaler)
                 if self.normaliser:
