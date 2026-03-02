@@ -151,7 +151,7 @@ def test_multiprocessor_not(setup_output_dir):
     sp_files = tif_files_to_list(out_dir)
 
     assert (
-        mp_files == sp_files
+        sorted(mp_files) == sorted(sp_files)
     ), "multiprocessing and single processing have different results"
 
 
