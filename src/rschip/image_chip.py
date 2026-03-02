@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 import multiprocessing
 import time
+from tqdm import tqdm
 
 
 class ImageChip:
@@ -505,16 +506,19 @@ class ImageChip:
         batches = self._calculate_batches(windows)
 
         if self.use_multiprocessing:
-            print(f"Processing {len(batches)} batches in parallel.")
             num_cores = multiprocessing.cpu_count() - 1  # leave a core free?
-            print(f"Using {num_cores} cores.")
+            print(
+                f"Processing {len(batches)} batches in parallel using {num_cores} cores."
+            )
             with multiprocessing.Pool(processes=num_cores) as pool:
-                pool.map(self._process_batch, batches)
+                with tqdm(
+                    total=len(batches), desc="Chipping (parallel)", unit="batch"
+                ) as pbar:
+                    for _ in pool.imap_unordered(self._process_batch, batches):
+                        pbar.update()
         else:
-            print(f"Processing in {len(batches)} batches")
-            for i, batch in enumerate(batches):
+            for batch in tqdm(batches, desc="Chipping", unit="batch"):
                 self._process_batch(batch)
-                print(f"Processed batch {i + 1} of {len(batches)}.")
 
         elapsed_time = time.time() - start_time
         print(f"Chipping completed in {elapsed_time:.2f} seconds.")
