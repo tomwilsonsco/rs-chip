@@ -183,7 +183,7 @@ class ImageChip:
             <image_file>_scaler_<sample_size>.pkl.
         """
         if self.normaliser is not None:
-            print("normaliser will be set to None")
+            warnings.warn("normaliser will be set to None")
             self.normaliser = None
         self.standard_scaler = self.sample_to_scaler(sample_size=sample_size)
         if write_file:
@@ -262,7 +262,7 @@ class ImageChip:
         max_val = self._validate_normaliser_inputs(max_val, "max_val")
 
         if self.standard_scaler is not None:
-            print("standard_scaler will be set to None")
+            warnings.warn("standard_scaler will be set to None")
             self.standard_scaler = None
 
         self.normaliser = {"min_val": min_val, "max_val": max_val}
