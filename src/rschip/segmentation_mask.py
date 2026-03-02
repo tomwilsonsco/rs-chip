@@ -1,3 +1,4 @@
+from pathlib import Path
 import geopandas as gpd
 import rasterio as rio
 import rasterio.features
@@ -10,8 +11,8 @@ class SegmentationMask:
     Create segmentation mask from polygon features to raster image extent.
 
     Attributes:
-        input_image_path (str): Path to the input tif image.
-        input_features_path (str): Path to the input features (shapefile or GeoPackage).
+        input_image_path (Path): Path to the input tif image.
+        input_features_path (Path): Path to the input features (shapefile or GeoPackage).
         output_path (str): Path where to create the output mask image.
         class_field (str): Attribute field name in input features that determines the pixel value.
         Defaults to 'ml_class'.
@@ -19,17 +20,17 @@ class SegmentationMask:
 
     def __init__(
         self,
-        input_image_path: str,
-        input_features_path: str,
-        output_path: str,
+        input_image_path: Path,
+        input_features_path: Path,
+        output_path: Path,
         class_field: str = "ml_class",
     ) -> None:
         """
         Initializes SegmentationMask with input image, features, output path, and class field.
         """
-        self.input_image_path = input_image_path
-        self.input_features_path = input_features_path
-        self.output_path = output_path
+        self.input_image_path = Path(input_image_path)
+        self.input_features_path = Path(input_features_path)
+        self.output_path = Path(output_path)
         self.class_field = class_field
 
     def create_mask(self) -> None:
