@@ -1,6 +1,7 @@
 numpy
 rasterio
 geopandas
+tqdm
 pytest
 pytest-cov
 codecov

@@ -1,10 +1,12 @@
 from pathlib import Path
+import warnings
 import rasterio as rio
 from rasterio.windows import Window
 import numpy as np
 import pickle
 import multiprocessing
 import time
+from tqdm import tqdm
 
 
 class ImageChip:
@@ -36,6 +38,7 @@ class ImageChip:
         output_format="tif",
         max_batch_size=1000,
     ):
+
         self.input_image_path = Path(input_image_path)
         self.output_path = Path(output_path) if output_path else Path(input_image_path)
         self.output_name = output_name if output_name else Path(input_image_path).stem
@@ -46,6 +49,41 @@ class ImageChip:
         self.use_multiprocessing = use_multiprocessing
         self.output_format = output_format
         self.max_batch_size = max_batch_size
+        if not self.input_image_path.exists():
+            raise FileNotFoundError(f"Input image not found: {self.input_image_path}")
+        self._read_image_metadata()
+        if self.pixel_dimensions <= 0:
+            raise ValueError("pixel_dimensions must be a positive integer")
+        if self.offset <= 0:
+            raise ValueError("offset must be a positive integer")
+        if self.output_format not in ("tif", "npz"):
+            raise ValueError(
+                f"output_format must be 'tif' or 'npz', got '{self.output_format}'"
+            )
+
+    def _read_image_metadata(self) -> None:
+        """
+        Read image profile metadata on initialisation.
+
+        Sets self.nodata_val from the image nodata property. Set to 0 with a warning
+        if no value set.
+        Sets self._band_count for use in band validation.
+        """
+        with rio.open(self.input_image_path) as src:
+            self._band_count = src.count
+            nodata = src.nodata
+
+        if nodata is not None:
+            self.nodata_val = nodata
+        else:
+            self.nodata_val = 0
+            warnings.warn(
+                f"No nodata value found in {self.input_image_path.name}. "
+                "Defaulting to 0. If 0 is a valid pixel value in your image, "
+                "scaling and normalisation will incorrectly treat those pixels as nodata.",
+                UserWarning,
+                stacklevel=2,
+            )
 
     def _generate_windows(self, src):
         """
@@ -91,7 +129,7 @@ class ImageChip:
             dtype=d_type,
             crs=src.crs,
             transform=transform,
-            nodata=None,
+            nodata=self.nodata_val,
         ) as dst:
             dst.write(chip)
 
@@ -122,11 +160,9 @@ class ImageChip:
         Returns:
             Path: The full path (as a `Path` object) where the chip will be saved, including the generated file name.
         """
-        if self.output_name is None:
-            output_file_name = f"{self.input_image_path.stem}_{x}_{y}.tif"
-        else:
-            output_name = self.output_name.replace(".tif", "")
-            output_file_name = f"{output_name}_{x}_{y}.tif"
+
+        output_name = self.output_name.replace(".tif", "")
+        output_file_name = f"{output_name}_{x}_{y}.tif"
         return self.output_path / output_file_name
 
     def set_scaler(self, sample_size=10000, write_file=True, write_path=None):
@@ -147,7 +183,7 @@ class ImageChip:
             <image_file>_scaler_<sample_size>.pkl.
         """
         if self.normaliser is not None:
-            print("normaliser will be set to None")
+            warnings.warn("normaliser will be set to None")
             self.normaliser = None
         self.standard_scaler = self.sample_to_scaler(sample_size=sample_size)
         if write_file:
@@ -176,8 +212,7 @@ class ImageChip:
         Raises:
             ValueError: If value is not valid.
         """
-        with rio.open(self.input_image_path) as f:
-            bands = f.profile["count"]
+        bands = self._band_count
         if isinstance(value, list):
             if len(value) != bands:
                 raise ValueError(
@@ -212,7 +247,7 @@ class ImageChip:
             write_file (bool): If True a pickle file is written containing the normaliser dictionary.
             write_path (string): The directory and filename (.pkl) where the scaler will be written if `write_file`.
             None by default when the file path is written to the same dir as ImageChip.input_image_path and file name
-            <image_file>_scaler_<sample_size>.pkl.
+            <image_file>_normaliser.pkl.
 
         """
         if min_val is None or max_val is None:
@@ -227,7 +262,7 @@ class ImageChip:
         max_val = self._validate_normaliser_inputs(max_val, "max_val")
 
         if self.standard_scaler is not None:
-            print("standard_scaler will be set to None")
+            warnings.warn("standard_scaler will be set to None")
             self.standard_scaler = None
 
         self.normaliser = {"min_val": min_val, "max_val": max_val}
@@ -243,13 +278,12 @@ class ImageChip:
                 pickle_file_path = output_dir / pickle_file_name
             else:
                 pickle_file_path = write_path
-                # Save the dictionary to a pickle file
+            # Save the dictionary to a pickle file
             with open(pickle_file_path, "wb") as f:
                 pickle.dump(self.normaliser, f)
                 print(f"Written normaliser to {pickle_file_path}")
 
-    @staticmethod
-    def apply_normaliser(array: np.ndarray, normaliser_dict: dict) -> np.ndarray:
+    def apply_normaliser(self, array: np.ndarray, normaliser_dict: dict) -> np.ndarray:
         """Normalises a numpy array based on min and max values created by `set_normaliser`.
 
         Args:
@@ -273,8 +307,7 @@ class ImageChip:
         for i in range(array.shape[0]):
             min_val = min_vals[i]
             max_val = max_vals[i]
-            # Apply normalising only to non-zero values (assuming 0 is nodata)
-            mask = array[i, :, :] != 0
+            mask = array[i, :, :] != self.nodata_val
             clipped = np.clip(array[i, :, :], min_val, max_val)
             normalised_array[i, :, :] = np.where(
                 mask, (clipped - min_val) / (max_val - min_val), 0
@@ -318,6 +351,7 @@ class ImageChip:
                 band_pixel_values = pixel_values[:, band_index]
                 valid_band_pixel_values = band_pixel_values[
                     ~np.isnan(band_pixel_values)
+                    & (band_pixel_values != self.nodata_val)
                 ]
                 band_vals = {
                     "band_name": band_names[band_index],
@@ -328,9 +362,8 @@ class ImageChip:
 
         return stats_dict
 
-    @staticmethod
     def apply_scaler(
-        array: np.ndarray, scaler_dict: dict[int, dict[str, float]]
+        self, array: np.ndarray, scaler_dict: dict[int, dict[str, float]]
     ) -> np.ndarray:
         """Standard scales a numpy array based on mean and std values from a dictionary.
 
@@ -353,8 +386,7 @@ class ImageChip:
             band_info = scaler_dict.get(i)
             mean = band_info["mean"]
             std = band_info["std"]
-            # Apply scaling only to non-zero values (assuming 0 is nodata)
-            mask = array[i, :, :] != 0
+            mask = array[i, :, :] != self.nodata_val
             scaled_array[i, :, :] = np.where(mask, (array[i, :, :] - mean) / std, 0)
         return scaled_array
 
@@ -400,7 +432,9 @@ class ImageChip:
         out = {}
         with rio.open(self.input_image_path) as src:
             for x, y, window in batch:
-                chip = src.read(window=window, boundless=True, fill_value=0)
+                chip = src.read(
+                    window=window, boundless=True, fill_value=self.nodata_val
+                )
                 if self.standard_scaler:
                     chip = self.apply_scaler(chip, self.standard_scaler)
                 if self.normaliser:
@@ -471,16 +505,19 @@ class ImageChip:
         batches = self._calculate_batches(windows)
 
         if self.use_multiprocessing:
-            print(f"Processing {len(batches)} batches in parallel.")
             num_cores = multiprocessing.cpu_count() - 1  # leave a core free?
-            print(f"Using {num_cores} cores.")
+            print(
+                f"Processing {len(batches)} batches in parallel using {num_cores} cores."
+            )
             with multiprocessing.Pool(processes=num_cores) as pool:
-                pool.map(self._process_batch, batches)
+                with tqdm(
+                    total=len(batches), desc="Chipping (parallel)", unit="batch"
+                ) as pbar:
+                    for _ in pool.imap_unordered(self._process_batch, batches):
+                        pbar.update()
         else:
-            print(f"Processing in {len(batches)} batches")
-            for i, batch in enumerate(batches):
+            for batch in tqdm(batches, desc="Chipping", unit="batch"):
                 self._process_batch(batch)
-                print(f"Processed batch {i + 1} of {len(batches)}.")
 
         elapsed_time = time.time() - start_time
         print(f"Chipping completed in {elapsed_time:.2f} seconds.")

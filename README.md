@@ -61,8 +61,7 @@ Using the parameter `use_multiprocessing=True` (default) makes chipping process 
 The `SegmentationMask` class is used to create a segmentation mask images from geopackage or shapefile using an input image as extent and pixel size reference.
 
 Once the segmentation mask has been created, the segmentation image can also be split into tiles. Some deep learning 
-frameworks expect images and corresponding masks to have the same file name in separate directories. The `output_name` 
-argument of ImageChip can ensure this is the case.
+frameworks expect images and corresponding masks to have the same file name in separate directories. The `output_name` argument of ImageChip can ensure this is the case.
 
 ```python
 from rschip import SegmentationMask, ImageChip
@@ -86,7 +85,6 @@ image_chipper = ImageChip(
     pixel_dimensions=128,
     offset=64,
     output_format="tif",
-    standard_scale=False,
 )
 image_chipper.chip_image()
 ```

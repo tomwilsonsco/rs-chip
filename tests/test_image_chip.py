@@ -113,13 +113,16 @@ def test_image_and_array_count(setup_output_dir):
 
 
 def test_scaler_functionality():
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path="tmp"
+    )
     sample_array = np.random.rand(3, 128, 128) * 100
     scaler_dict = {
         0: {"mean": 50, "std": 10},
         1: {"mean": 60, "std": 15},
         2: {"mean": 40, "std": 20},
     }
-    scaled_array = ImageChip.apply_scaler(sample_array, scaler_dict)
+    scaled_array = image_chip.apply_scaler(sample_array, scaler_dict)
     unscaled_array = ImageChip.unapply_scaler(scaled_array, scaler_dict)
     assert np.allclose(
         sample_array, unscaled_array, atol=1e-1
@@ -150,8 +153,8 @@ def test_multiprocessor_not(setup_output_dir):
     chip_image_run(output_path=out_dir, use_multiprocessing=False)
     sp_files = tif_files_to_list(out_dir)
 
-    assert (
-        mp_files == sp_files
+    assert sorted(mp_files) == sorted(
+        sp_files
     ), "multiprocessing and single processing have different results"
 
 
@@ -322,21 +325,68 @@ def test_pickle_custom_scaler(setup_output_dir):
 
 
 def test_apply_normaliser_valid():
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path="tmp"
+    )
     array = np.array([[[1, 2], [3, 4]]], dtype=np.float32)
     normaliser_dict = {"min_val": [1], "max_val": [3]}
     expected_output = np.array([[[0.0, 0.5], [1.0, 1.0]]], dtype=np.float32)
-    result = ImageChip.apply_normaliser(array, normaliser_dict)
+    result = image_chip.apply_normaliser(array, normaliser_dict)
     np.testing.assert_array_almost_equal(result, expected_output)
 
 
 def test_apply_normaliser_invalid_band_length():
+    image_chip = ImageChip(
+        input_image_path="tests/data/test_img.tif", output_path="tmp"
+    )
     array = np.array([[[1, 2], [3, 4]]], dtype=np.float32)
     normaliser_dict = {"min_val": [1, 4], "max_val": [2, 5]}
     with pytest.raises(
         ValueError,
         match="Array band dimension .* does not match length of normaliser clip values",
     ):
-        ImageChip.apply_normaliser(array, normaliser_dict)
+        image_chip.apply_normaliser(array, normaliser_dict)
+
+
+def test_init_missing_image():
+    with pytest.raises(FileNotFoundError, match="Input image not found"):
+        ImageChip(input_image_path="nonexistent.tif", output_path="tmp")
+
+
+def test_init_invalid_pixel_dimensions():
+    with pytest.raises(ValueError, match="pixel_dimensions must be a positive integer"):
+        ImageChip(
+            input_image_path="tests/data/test_img.tif",
+            output_path="tmp",
+            pixel_dimensions=0,
+        )
+
+
+def test_init_invalid_offset():
+    with pytest.raises(ValueError, match="offset must be a positive integer"):
+        ImageChip(
+            input_image_path="tests/data/test_img.tif",
+            output_path="tmp",
+            offset=-1,
+        )
+
+
+def test_init_invalid_output_format():
+    with pytest.raises(ValueError, match="output_format must be 'tif' or 'npz'"):
+        ImageChip(
+            input_image_path="tests/data/test_img.tif",
+            output_path="tmp",
+            output_format="jpg",
+        )
+
+
+def test_nodata_val_set_from_image():
+    # test_img.tif has no nodata set, so should warn and default to 0
+    with pytest.warns(UserWarning, match="No nodata value found"):
+        image_chip = ImageChip(
+            input_image_path="tests/data/test_img.tif", output_path="tmp"
+        )
+    assert image_chip.nodata_val == 0
 
 
 if __name__ == "__main__":
