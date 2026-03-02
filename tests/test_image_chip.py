@@ -150,8 +150,8 @@ def test_multiprocessor_not(setup_output_dir):
     chip_image_run(output_path=out_dir, use_multiprocessing=False)
     sp_files = tif_files_to_list(out_dir)
 
-    assert (
-        sorted(mp_files) == sorted(sp_files)
+    assert sorted(mp_files) == sorted(
+        sp_files
     ), "multiprocessing and single processing have different results"
 
 
