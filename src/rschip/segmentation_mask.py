@@ -13,7 +13,7 @@ class SegmentationMask:
     Attributes:
         input_image_path (Path): Path to the input tif image.
         input_features_path (Path): Path to the input features (shapefile or GeoPackage).
-        output_path (str): Path where to create the output mask image.
+        output_path (Path): Path where to create the output mask image.
         class_field (str): Attribute field name in input features that determines the pixel value.
         Defaults to 'ml_class'.
     """
