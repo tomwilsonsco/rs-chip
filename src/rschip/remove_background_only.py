@@ -156,7 +156,7 @@ class RemoveBackgroundOnly:
             img_npz_file.unlink()
 
             if out_class_dict:
-                np.savez(f, **out_class_dict)
-                np.savez(img_npz_file, **out_img_dict)
+                np.savez_compressed(f, **out_class_dict)
+                np.savez_compressed(img_npz_file, **out_img_dict)
             else:
                 print(f"No valid entries left in {f.name}, deleting the NPZ file.")
