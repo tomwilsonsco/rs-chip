@@ -241,7 +241,7 @@ class ImageChip:
                 pickle_file_path = output_dir / pickle_file_name
             else:
                 pickle_file_path = write_path
-                # Save the dictionary to a pickle file
+            # Save the dictionary to a pickle file
             with open(pickle_file_path, "wb") as f:
                 pickle.dump(self.normaliser, f)
                 print(f"Written normaliser to {pickle_file_path}")
