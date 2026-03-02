@@ -386,7 +386,6 @@ class ImageChip:
             band_info = scaler_dict.get(i)
             mean = band_info["mean"]
             std = band_info["std"]
-            # Apply scaling only to non-zero values (assuming 0 is nodata)
             mask = array[i, :, :] != self.nodata_val
             scaled_array[i, :, :] = np.where(mask, (array[i, :, :] - mean) / std, 0)
         return scaled_array
