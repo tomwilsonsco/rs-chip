@@ -210,7 +210,7 @@ class ImageChip:
             write_file (bool): If True a pickle file is written containing the normaliser dictionary.
             write_path (string): The directory and filename (.pkl) where the scaler will be written if `write_file`.
             None by default when the file path is written to the same dir as ImageChip.input_image_path and file name
-            <image_file>_scaler_<sample_size>.pkl.
+            <image_file>_normaliser.pkl.
 
         """
         if min_val is None or max_val is None:
