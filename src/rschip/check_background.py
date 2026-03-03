@@ -17,7 +17,9 @@ class CheckBackgroundOnly:
         non_background_min (int): The minimum number of non-background pixels required to consider a chip as not background-only. Defaults to 1.
     """
 
-    def __init__(self, background_val: Union[int, float] = 0, non_background_min: int = 1):
+    def __init__(
+        self, background_val: Union[int, float] = 0, non_background_min: int = 1
+    ):
         self.background_val = background_val
         self.non_background_min = non_background_min
 

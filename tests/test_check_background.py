@@ -84,8 +84,12 @@ def test_background_check(setup_output_dir):
     # Check DataFrame and CSV content
     assert len(df) == tif_mask_files_init
     assert "is_background_only" in df.columns
-    assert df["is_background_only"].any(), "Expected some background-only chips to be True."
-    assert not df["is_background_only"].all(), "Expected some non-background chips to be False."
+    assert df[
+        "is_background_only"
+    ].any(), "Expected some background-only chips to be True."
+    assert not df[
+        "is_background_only"
+    ].all(), "Expected some non-background chips to be False."
 
     csv_df = pd.read_csv(csv_path)
     assert len(csv_df) == len(df)
