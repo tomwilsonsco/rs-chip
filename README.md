@@ -40,7 +40,6 @@ image_chipper = ImageChip(
     output_path="path/to/output_directory_image",
     pixel_dimensions=128,
     offset=64,
-    output_format="tif",
 )
 
 # set a min max normaliser 
@@ -50,9 +49,8 @@ image_chipper.set_normaliser(min_val=500, max_val=3000)
 # Generate chips
 image_chipper.chip_image()
 ```
-With the `output_format` parameter set to `"tif"`, each resulting tile is named using a suffix that represents the bottom left `(x, y)`
-pixel coordinate position. If output_format is set to `"npz"`, the resulting .npz zip file contains a dictionary of arrays, 
-where the keys are the same as these tile names. By default, the prefix of each tile name is taken from the input image file name 
+Each resulting tile is named using a suffix that represents the bottom left `(x, y)`
+pixel coordinate position. By default, the prefix of each tile name is taken from the input image file name 
 (`input_image_path`), unless you specify `output_name`.
 
 Using the parameter `use_multiprocessing=True` (default) makes chipping process faster by using multiple cores. 
@@ -84,13 +82,12 @@ image_chipper = ImageChip(
     output_name="large_image",
     pixel_dimensions=128,
     offset=64,
-    output_format="tif",
 )
 image_chipper.chip_image()
 ```
 
 ### 3. RemoveBackgroundOnly Class
-The `RemoveBackgroundOnly` class provides functionality to remove image chips (either could be tifs or numpy arrays inside npz file) that contain only background. Filtering out images only containing background helps to prepare a dataset more suitable for training models.
+The `RemoveBackgroundOnly` class provides functionality to remove image chips that contain only background. Filtering out images only containing background helps to prepare a dataset more suitable for training models.
  
 ```python
 from rschip import RemoveBackgroundOnly

@@ -20,9 +20,6 @@ class ImageChip:
         pixel_dimensions (int): The height and width of each tile in pixels. Defaults to 128.
         offset (int): The offset used when creating tiles, i.e. the step size. Defaults to 64.
         use_multiprocessing (bool): Whether to use multiprocessing for chipping. Defaults to True.
-        output_format (str): The format of the output files, either 'tif' or 'npz'.
-                             If tif then tif file written per tile window. If npz then `batch_size` batches
-                              of array tiles are written into one npz file. Defaults to tif.
         max_batch_size (int): The maximum number of tiles to process in a batch.
                              If multiprocessing is enabled, the actual batch size may be less. Defaults to 1000.
     """
@@ -35,7 +32,6 @@ class ImageChip:
         pixel_dimensions=128,
         offset=64,
         use_multiprocessing=True,
-        output_format="tif",
         max_batch_size=1000,
     ):
 
@@ -47,7 +43,6 @@ class ImageChip:
         self.standard_scaler = None
         self.normaliser = None
         self.use_multiprocessing = use_multiprocessing
-        self.output_format = output_format
         self.max_batch_size = max_batch_size
         if not self.input_image_path.exists():
             raise FileNotFoundError(f"Input image not found: {self.input_image_path}")
@@ -56,10 +51,6 @@ class ImageChip:
             raise ValueError("pixel_dimensions must be a positive integer")
         if self.offset <= 0:
             raise ValueError("offset must be a positive integer")
-        if self.output_format not in ("tif", "npz"):
-            raise ValueError(
-                f"output_format must be 'tif' or 'npz', got '{self.output_format}'"
-            )
 
     def _read_image_metadata(self) -> None:
         """
@@ -132,22 +123,6 @@ class ImageChip:
             nodata=self.nodata_val,
         ) as dst:
             dst.write(chip)
-
-    def _save_batch_as_npz(self, batch, batch_index) -> None:
-        """
-        Save a batch of chips as an NPZ file.
-
-        Args:
-            batch (dict): Dictionary containing image chips.
-            batch_index (int): Index of the batch.
-
-        Returns:
-            None: Writes the batch to an NPZ file at the specified path.
-        """
-        output_file_path = self.output_path / f"batch_{batch_index}.npz"
-        if output_file_path.exists():
-            output_file_path.unlink()
-        np.savez_compressed(output_file_path, **batch)
 
     def _output_file(self, x: int, y: int) -> Path:
         """
@@ -428,8 +403,7 @@ class ImageChip:
         Returns:
             None
         """
-        batch_id, batch = batch_vals
-        out = {}
+        _, batch = batch_vals
         with rio.open(self.input_image_path) as src:
             for x, y, window in batch:
                 chip = src.read(
@@ -440,16 +414,9 @@ class ImageChip:
                 if self.normaliser:
                     chip = self.apply_normaliser(chip, self.normaliser)
 
-                if self.output_format == "tif":
-                    output_file_path = self._output_file(x, y)
-                    transform = src.window_transform(window)
-                    self._save_chip(chip, transform, output_file_path, chip.dtype, src)
-                elif self.output_format == "npz":
-                    arr_name = f"{self.output_name}_{x}_{y}"
-                    out[arr_name] = chip
-
-        if self.output_format == "npz" and out:
-            self._save_batch_as_npz(out, batch_id)
+                output_file_path = self._output_file(x, y)
+                transform = src.window_transform(window)
+                self._save_chip(chip, transform, output_file_path, chip.dtype, src)
 
     def _calculate_batches(self, windows):
         """
@@ -486,7 +453,7 @@ class ImageChip:
         Method uses rasterio to read a satellite image, then splits the image into
         smaller square tiles of specified dimensions and saves them to the output path.
 
-        The output tile file names are suffixed with x and y offsets and saved as TIFF files or NPZ files.
+        The output tile file names are suffixed with x and y offsets and saved as TIFF files.
         Optionally the chip pixel values can be standard scaled before saving, using a sample of the full image pixels.
 
         Returns:

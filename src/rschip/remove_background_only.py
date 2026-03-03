@@ -35,19 +35,6 @@ class RemoveBackgroundOnly:
         )
         return image_chips_dir / image_file
 
-    def _find_img_npz_eq_mask(self, class_npz_file: Path, image_npz_dir: str) -> Path:
-        image_npz_dir = Path(image_npz_dir)
-        class_file = class_npz_file.name
-        return image_npz_dir / class_file
-
-    def _find_img_key_from_mask_key(
-        self, class_key: str, masks_prefix: Optional[str], images_prefix: Optional[str]
-    ) -> str:
-        img_key = class_key.replace(
-            self._prefix_checker(masks_prefix), self._prefix_checker(images_prefix)
-        )
-        return img_key
-
     def check_background_only(self, class_arr: np.ndarray) -> bool:
         """
         Check if an image mask has more than the specified number of non-background pixels.
@@ -106,57 +93,3 @@ class RemoveBackgroundOnly:
 
         image_files = list(class_chips_dir.glob(f"**/*.{image_extn}"))
         print(f"{len(image_files)} in {class_chips_dir} after.")
-
-    def remove_background_only_npz(
-        self,
-        class_npz_dir: str,
-        image_npz_dir: str,
-        masks_prefix: Optional[str] = None,
-        images_prefix: Optional[str] = None,
-    ) -> None:
-        """
-        Remove arrays from NPZ files where the mask contains background only.
-
-        Args:
-            class_npz_dir (str): Directory containing the chip mask NPZ files to check.
-            image_npz_dir (str): Corresponding chip image NPZ file directory - if mask is all background, image is removed too.
-            masks_prefix (str, optional): Prefix for mask files. Defaults to None. This prefix is removed when checking for
-            equivalent mask to image file.
-            images_prefix (str, optional): As `masks_prefix`. Prefix for image files. Defaults to None.
-
-        Raises:
-            FileNotFoundError: If no NPZ files are found in the input directory.
-        """
-        class_npz_dir = Path(class_npz_dir)
-        npz_files = list(class_npz_dir.glob("**/*.npz"))
-        if not npz_files:
-            raise FileNotFoundError(f"No npz files found in {class_npz_dir}")
-
-        for f in npz_files:
-            npz_class_dict = np.load(f)
-            img_npz_file = self._find_img_npz_eq_mask(f, image_npz_dir)
-            npz_image_dict = np.load(img_npz_file)
-
-            out_class_dict = {}
-            out_img_dict = {}
-
-            print(f"{f.name} initially {len(npz_class_dict.keys())}...")
-            for key in npz_class_dict.files:
-                class_arr = npz_class_dict[key]
-                if not self.check_background_only(class_arr):
-                    out_class_dict[key] = class_arr
-                    img_key = self._find_img_key_from_mask_key(
-                        key, masks_prefix, images_prefix
-                    )
-                    out_img_dict[img_key] = npz_image_dict[img_key]
-            print(f"{f.name} finally {len(out_class_dict.keys())}...")
-            npz_class_dict.close()
-            npz_image_dict.close()
-            f.unlink()
-            img_npz_file.unlink()
-
-            if out_class_dict:
-                np.savez_compressed(f, **out_class_dict)
-                np.savez_compressed(img_npz_file, **out_img_dict)
-            else:
-                print(f"No valid entries left in {f.name}, deleting the NPZ file.")
