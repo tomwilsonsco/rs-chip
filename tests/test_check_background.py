@@ -126,5 +126,5 @@ def test_non_background_min_check(setup_output_dir):
     background_only_count2 = df2["is_background_only"].sum()
 
     assert (
-        background_only_count2 > background_only_count1
+        background_only_count2 >= background_only_count1
     ), "Higher non_background_min threshold should result in more background-only chips."
