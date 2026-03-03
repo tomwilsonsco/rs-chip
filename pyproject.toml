@@ -32,6 +32,7 @@ dependencies = [
     "geopandas",
     "shapely",
     "tqdm",
+    "pandas",
 ]
 requires-python = ">=3.9"
 
