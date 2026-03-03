@@ -21,7 +21,6 @@ def chip_image_run(
     pixel_dimensions=128,
     offset=64,
     use_multiprocessing=True,
-    output_format="tif",
     max_batch_size=10,
     scaler=False,
     normaliser=False,
@@ -32,7 +31,6 @@ def chip_image_run(
         pixel_dimensions=pixel_dimensions,
         offset=offset,
         use_multiprocessing=use_multiprocessing,
-        output_format=output_format,
         max_batch_size=max_batch_size,
     )
     if scaler:
@@ -43,13 +41,6 @@ def chip_image_run(
     image_chip.chip_image()
 
 
-def load_npz(npz_file_path):
-    with np.load(npz_file_path) as data:
-        test_key = data.files[0]
-        arr = data[test_key]
-    return test_key, arr
-
-
 def load_tif(tif_file_path):
     with rio.open(tif_file_path) as f:
         arr = f.read()
@@ -57,90 +48,12 @@ def load_tif(tif_file_path):
     return arr, prof
 
 
-def npz_files_to_list(out_dir):
-    array_list = []
-    for file_path in Path(out_dir).glob("*.npz"):
-        with np.load(file_path) as data:
-            for array_name in data.files:
-                array_list.append(data[array_name])
-    return array_list
-
-
 def tif_files_to_list(out_dir):
     return list(Path(out_dir).glob("*.tif"))
 
 
-def test_image_chip(setup_output_dir):
-    out_dir = setup_output_dir
-    # Test chipping with TIFF output
-    chip_image_run(output_path=out_dir)
-
-    # Verify that TIFF files were created
-    tif_files = list(out_dir.glob("*.tif"))
-    assert len(tif_files) > 0, "No TIFF files were created."
-
-    # Test chipping with NPZ output
-    chip_image_run(output_path=out_dir, output_format="npz")
-
-    # Verify that NPZ files were created
-    npz_files = list(out_dir.glob("*.npz"))
-    assert len(npz_files) > 0, "No NPZ files were created."
 
 
-def test_array_equality(setup_output_dir):
-    out_dir = setup_output_dir
-    chip_image_run(output_path=out_dir, output_format="tif")
-    chip_image_run(output_path=out_dir, output_format="npz")
-
-    # Load one NPZ and corresponding TIFF file to compare arrays
-    test_key, npz_arr = load_npz(out_dir / "batch_0.npz")
-    tif_arr, _ = load_tif(f"{out_dir}/{test_key}.tif")
-
-    # Compare arrays
-    assert np.array_equal(tif_arr, npz_arr), "Arrays are not equal."
-
-
-def test_image_and_array_count(setup_output_dir):
-    out_dir = setup_output_dir
-
-    chip_image_run(output_path=out_dir, output_format="tif")
-    chip_image_run(output_path=out_dir, output_format="npz")
-
-    # Compare the number of TIFF images and NPZ arrays
-    npz_array_count = len(npz_files_to_list(out_dir))
-    tif_file_count = len(tif_files_to_list(out_dir))
-    assert npz_array_count == tif_file_count, "Mismatch in number of arrays and images."
-
-
-def test_scaler_functionality():
-    image_chip = ImageChip(
-        input_image_path="tests/data/test_img.tif", output_path="tmp"
-    )
-    sample_array = np.random.rand(3, 128, 128) * 100
-    scaler_dict = {
-        0: {"mean": 50, "std": 10},
-        1: {"mean": 60, "std": 15},
-        2: {"mean": 40, "std": 20},
-    }
-    scaled_array = image_chip.apply_scaler(sample_array, scaler_dict)
-    unscaled_array = ImageChip.unapply_scaler(scaled_array, scaler_dict)
-    assert np.allclose(
-        sample_array, unscaled_array, atol=1e-1
-    ), "Scaling/unscaling mismatch"
-
-
-def test_large_window_image(setup_output_dir):
-    out_dir = setup_output_dir
-    chip_image_run(
-        output_path=out_dir, output_format="tif", pixel_dimensions=512, offset=256
-    )
-    chip_image_run(
-        output_path=out_dir, output_format="npz", pixel_dimensions=512, offset=256
-    )
-
-    # Verify that at least one file was created
-    tif_files = tif_files_to_list(out_dir)
-    assert len(tif_files) > 0, "No TIFF files were created for large window."
 
 
 def test_multiprocessor_not(setup_output_dir):
@@ -180,7 +93,6 @@ def test_tile_count(setup_output_dir):
         input_image_path=input_image_path,
         pixel_dimensions=pixel_dimensions,
         offset=offset,
-        output_format="tif",
     )
 
     # Verify that the expected number of tiles were created
@@ -193,7 +105,7 @@ def test_tile_count(setup_output_dir):
 def test_normalising(setup_output_dir):
     out_dir = setup_output_dir
 
-    chip_image_run(output_path=out_dir, output_format="tif", normaliser=True)
+    chip_image_run(output_path=out_dir, normaliser=True)
 
     with rio.open(tif_files_to_list(out_dir)[0]) as f:
         test_array = f.read()
@@ -204,7 +116,7 @@ def test_normalising(setup_output_dir):
 def test_standard_scaling(setup_output_dir):
     out_dir = setup_output_dir
 
-    chip_image_run(output_path=out_dir, output_format="tif", scaler=True)
+    chip_image_run(output_path=out_dir, scaler=True)
 
     with rio.open(tif_files_to_list(out_dir)[0]) as f:
         test_array = f.read()
@@ -371,13 +283,14 @@ def test_init_invalid_offset():
         )
 
 
-def test_init_invalid_output_format():
-    with pytest.raises(ValueError, match="output_format must be 'tif' or 'npz'"):
-        ImageChip(
-            input_image_path="tests/data/test_img.tif",
-            output_path="tmp",
-            output_format="jpg",
-        )
+def test_image_chip(setup_output_dir):
+    out_dir = setup_output_dir
+    # Test chipping with TIFF output
+    chip_image_run(output_path=out_dir)
+
+    # Verify that TIFF files were created
+    tif_files = list(out_dir.glob("*.tif"))
+    assert len(tif_files) > 0, "No TIFF files were created."
 
 
 def test_nodata_val_set_from_image():
