@@ -90,7 +90,7 @@ class CheckBackgroundOnly:
             FileNotFoundError: If no files with the specified extension are found in the input directory.
         """
         class_chips_dir = Path(class_chips_dir)
-        mask_files = list(class_chips_dir.glob(f"**/*.{image_extn}"))
+        mask_files = sorted(list(class_chips_dir.glob(f"**/*.{image_extn}")))
         if not mask_files:
             raise FileNotFoundError(f"No {image_extn} files found in {class_chips_dir}")
 
