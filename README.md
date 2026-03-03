@@ -86,17 +86,17 @@ image_chipper = ImageChip(
 image_chipper.chip_image()
 ```
 
-### 3. RemoveBackgroundOnly Class
-The `RemoveBackgroundOnly` class provides functionality to remove image chips that contain only background. Filtering out images only containing background helps to prepare a dataset more suitable for training models.
+### 3. CheckBackgroundOnly Class
+The `CheckBackgroundOnly` class provides functionality to remove image chips that contain only background. Filtering out images only containing background helps to prepare a dataset more suitable for training models.
  
 ```python
 from rschip import RemoveBackgroundOnly
 
 # Initialize the RemoveBackgroundOnly instance
-remover = RemoveBackgroundOnly(background_val=0, non_background_min=100)
+checker = checkBackgroundOnly(background_val=0, non_background_min=1)
 
 # Remove chips with only background
-remover.remove_background_only_files(
+checker.check_background_chips(
     class_chips_dir="path/to/mask_directory",
     image_chips_dir="path/to/image_directory"
 )
