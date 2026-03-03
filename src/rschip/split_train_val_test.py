@@ -109,7 +109,9 @@ class DatasetSplitter:
 
         background_csv = self.mask_dir / "background_only_check.csv"
         if not background_csv.exists():
-            print(f"'{background_csv}' not found. Running check for background only chips")
+            print(
+                f"'{background_csv}' not found. Running check for background only chips"
+            )
             checker = CheckBackgroundOnly()
             checker.check_background_chips(str(self.mask_dir), str(self.image_dir))
 
