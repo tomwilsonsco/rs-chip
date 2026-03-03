@@ -38,7 +38,8 @@ class DatasetSplitter:
             val_ratio (float): The proportion of the data to be used for validation. Must be > 0.
             test_ratio (float): The proportion of the data to be used for testing. Can be 0.
             seed (int, optional): Seed for the random number generator for reproducible shuffling. Defaults to None.
-            run_background_check (bool): If True, a background check will be performed. Defaults to True.
+            run_background_check (bool): If True, the process will only move files without background
+            by using the CheckBackgroundOnly class. Defaults to True.
 
         Raises:
             ValueError: If the output directory/dataset already exists, if split ratios do not sum to 1,
@@ -108,7 +109,7 @@ class DatasetSplitter:
 
         background_csv = self.mask_dir / "background_only_check.csv"
         if not background_csv.exists():
-            print(f"'{background_csv}' not found. Running background check...")
+            print(f"'{background_csv}' not found. Running check for background only chips")
             checker = CheckBackgroundOnly()
             checker.check_background_chips(str(self.mask_dir), str(self.image_dir))
 
