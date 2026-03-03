@@ -13,7 +13,7 @@ transformers (ViT) such as [Segment Anything](https://arxiv.org/abs/2304.02643).
   or standard scale before writing chips as required.
 - **Mask Segmentation**: Generate segmentation mask images from geopackage or shapefile features for supervised 
   segmentation, e.g using [U-Net](https://arxiv.org/abs/1505.04597).
-- **Remove Background Chips**: Filter out image chips containing only background. Useful for when preparing training 
+- **Check Background Chips**: Identify image chips containing only background. Useful for when preparing training 
   and testing datasets.
 
 ## Installation
