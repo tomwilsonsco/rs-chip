@@ -1,7 +1,7 @@
 from pathlib import Path
 import rasterio as rio
 import numpy as np
-from typing import Optional
+from typing import Optional, Union
 import pandas as pd
 
 
@@ -13,11 +13,11 @@ class CheckBackgroundOnly:
     their corresponding segmentation masks.
 
     Attributes:
-        background_val (int): The value in the mask image array that represents the background class. Defaults to 0.
+        background_val (int | float): The value in the mask image array that represents the background class. Defaults to 0.
         non_background_min (int): The minimum number of non-background pixels required to consider a chip as not background-only. Defaults to 1.
     """
 
-    def __init__(self, background_val: int = 0, non_background_min: int = 1):
+    def __init__(self, background_val: Union[int, float] = 0, non_background_min: int = 1):
         self.background_val = background_val
         self.non_background_min = non_background_min
 
