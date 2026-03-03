@@ -52,10 +52,6 @@ def tif_files_to_list(out_dir):
     return list(Path(out_dir).glob("*.tif"))
 
 
-
-
-
-
 def test_multiprocessor_not(setup_output_dir):
     out_dir = setup_output_dir
     chip_image_run(output_path=out_dir, use_multiprocessing=True)

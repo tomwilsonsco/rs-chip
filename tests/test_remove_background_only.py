@@ -1,7 +1,6 @@
 import pytest
 from pathlib import Path
 import tempfile
-import numpy as np
 from rschip import ImageChip
 from rschip import SegmentationMask
 from rschip import RemoveBackgroundOnly
@@ -36,10 +35,6 @@ def chip_image_run(
 
 def tif_files_to_list(out_dir):
     return list(Path(out_dir).glob("*.tif"))
-
-
-
-
 
 
 # repeat the same but for tif file chips not npz
