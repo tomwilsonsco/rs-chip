@@ -90,9 +90,9 @@ image_chipper.chip_image()
 The `CheckBackgroundOnly` class provides functionality to list image chips that contain only background. Filtering out images only containing background helps to prepare a dataset more suitable for training models.
  
 ```python
-from rschip import RemoveBackgroundOnly
+from rschip import CheckBackgroundOnly
 
-# Initialize the RemoveBackgroundOnly instance
+# Initialize the CheckBackgroundOnly instance
 checker = checkBackgroundOnly(background_val=0, non_background_min=1)
 
 # Find chips with only background
