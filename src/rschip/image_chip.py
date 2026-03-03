@@ -124,8 +124,6 @@ class ImageChip:
         ) as dst:
             dst.write(chip)
 
-
-
     def _output_file(self, x: int, y: int) -> Path:
         """
         Generate the output file path for a chip based on its x and y coordinates.
