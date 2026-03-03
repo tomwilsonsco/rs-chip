@@ -13,8 +13,10 @@ class CheckBackgroundOnly:
     their corresponding segmentation masks.
 
     Attributes:
-        background_val (int | float): The value in the mask image array that represents the background class. Defaults to 0.
-        non_background_min (int): The minimum number of non-background pixels required to consider a chip as not background-only. Defaults to 1.
+        background_val (int | float): The value in the mask image array that represents the background class.
+        Defaults to 0.
+        non_background_min (int): The minimum number of non-background pixels required to consider a chip
+        as not background-only. Defaults to 1.
     """
 
     def __init__(
