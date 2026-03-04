@@ -134,9 +134,10 @@ class DatasetSplitter:
                 f"'{background_csv}' not found. Running check for background only chips"
             )
             checker = CheckBackgroundOnly()
-            checker.check_background_chips(str(self.mask_dir), str(self.image_dir))
+            df = checker.check_background_chips(str(self.mask_dir), str(self.image_dir))
+        else:
+            df = pd.read_csv(background_csv)
 
-        df = pd.read_csv(background_csv)
         background_files = df[df["is_background_only"]]["mask_file"].tolist()
         background_files = [Path(f).name for f in background_files]
 
