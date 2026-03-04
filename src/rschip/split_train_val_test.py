@@ -57,8 +57,10 @@ class DatasetSplitter:
         self.run_background_check = run_background_check
 
         if self.dataset_dir.exists():
-            raise ValueError(f"Output directory '{self.dataset_dir}' already exists. \
-                Please remove it or choose a different output directory.")
+            raise ValueError(
+                f"Output directory '{self.dataset_dir}' already exists. "
+                "Please remove it or choose a different output directory."
+            )
 
         if not (0.999 < train_ratio + val_ratio + test_ratio < 1.001):
             raise ValueError("The sum of train, val, and test ratios must be 1.")
