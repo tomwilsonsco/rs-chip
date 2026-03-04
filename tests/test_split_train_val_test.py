@@ -1,6 +1,5 @@
 import pytest
 import tempfile
-import shutil
 from pathlib import Path
 import rasterio as rio
 import numpy as np
