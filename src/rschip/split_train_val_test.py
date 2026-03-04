@@ -38,8 +38,9 @@ class DatasetSplitter:
             val_ratio (float): The proportion of the data to be used for validation. Must be > 0.
             test_ratio (float): The proportion of the data to be used for testing. Can be 0.
             seed (int, optional): Seed for the random number generator for reproducible shuffling. Defaults to None.
-            run_background_check (bool): If True, the process will only move files without background
-            by using the CheckBackgroundOnly class. Defaults to True.
+            run_background_check (bool): If True, uses the CheckBackgroundOnly class to filter out
+            background-only image/mask pairs before copying the remaining files into the dataset.
+            Defaults to True.
 
         Raises:
             ValueError: If the output directory/dataset already exists, if split ratios do not sum to 1,
