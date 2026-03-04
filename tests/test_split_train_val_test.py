@@ -25,6 +25,8 @@ def setup_test_data():
                 "width": 1,
                 "count": 1,
                 "dtype": "uint8",
+                "transform": rio.transform.from_origin(0, 0, 1, 1),
+                "crs": "EPSG:27700",
             }
             with rio.open(image_dir / f"test_{i}.tif", "w", **profile) as dst:
                 dst.write(np.zeros((1, 1, 1), dtype="uint8"))
