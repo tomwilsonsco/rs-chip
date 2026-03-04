@@ -140,15 +140,17 @@ class DatasetSplitter:
         file_pairs = self._get_file_pairs()
 
         if not file_pairs:
-            print("Error: No image-mask pairs found.")
-            return
+            raise FileNotFoundError(
+                "No image-mask pairs found in the specified input directories."
+            )
 
         file_pairs = self._filter_background_only(file_pairs)
 
         total_files = len(file_pairs)
         if total_files == 0:
-            print("Error: No valid images found after filtering.")
-            return
+            raise ValueError(
+                "No valid images found after filtering background-only masks."
+            )
 
         self._create_dirs()
 
