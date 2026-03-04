@@ -63,6 +63,16 @@ def test_invalid_ratios(setup_test_data):
         )
 
 
+def test_already_exists(setup_test_data):
+    dirs = setup_test_data
+    splitter = DatasetSplitter(
+        dirs["image_dir"], dirs["mask_dir"], dirs["output_dir"], seed=42
+    )
+    splitter.split()
+    with pytest.raises(ValueError, match="already exists"):
+        DatasetSplitter(dirs["image_dir"], dirs["mask_dir"], dirs["output_dir"])
+
+
 def test_directory_creation(setup_test_data):
     dirs = setup_test_data
     splitter = DatasetSplitter(
@@ -113,3 +123,30 @@ def test_filter_background_only(setup_test_data):
     assert len(train_images) == 6
     assert len(val_images) == 2
     assert not (dirs["output_dir"] / "dataset" / "images" / "test").exists()
+
+
+def test_no_filter_background(setup_test_data):
+    dirs = setup_test_data
+    splitter = DatasetSplitter(
+        dirs["image_dir"],
+        dirs["mask_dir"],
+        dirs["output_dir"],
+        train_ratio=0.7,
+        val_ratio=0.2,
+        test_ratio=0.1,
+        seed=42,
+        filter_background_only=False,
+    )
+    splitter.split()
+
+    train_images = list(
+        (dirs["output_dir"] / "dataset" / "images" / "train").glob("*.tif")
+    )
+    val_images = list((dirs["output_dir"] / "dataset" / "images" / "val").glob("*.tif"))
+    test_images = list(
+        (dirs["output_dir"] / "dataset" / "images" / "test").glob("*.tif")
+    )
+    # all 10 files should be used
+    assert len(train_images) == 7
+    assert len(val_images) == 2
+    assert len(test_images) == 1
