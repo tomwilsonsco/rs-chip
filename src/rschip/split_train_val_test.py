@@ -1,4 +1,5 @@
 import shutil
+import warnings
 import random
 from pathlib import Path
 import pandas as pd
@@ -108,6 +109,8 @@ class DatasetSplitter:
             mask_path = self.mask_dir / img_path.name
             if mask_path.exists():
                 file_pairs.append((img_path, mask_path))
+            else:
+                warnings.warn(f"No equivalent mask found for {img_path}", UserWarning, stacklevel=2)
         return file_pairs
 
     def _filter_background_only(self, file_pairs):
