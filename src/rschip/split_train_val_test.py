@@ -62,10 +62,17 @@ class DatasetSplitter:
                 "Please remove it or choose a different output directory."
             )
 
+        # Ensure each ratio is a valid proportion in [0, 1]
+        for name, value in (("train_ratio", train_ratio), ("val_ratio", val_ratio), ("test_ratio", test_ratio)):
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be between 0 and 1 (received {value}).")
+
+        # Ensure the ratios collectively sum to 1 (within a small tolerance)
         if not (0.999 < train_ratio + val_ratio + test_ratio < 1.001):
             raise ValueError("The sum of train, val, and test ratios must be 1.")
 
-        if train_ratio == 0 or val_ratio == 0:
+        # Train and validation ratios must be strictly greater than 0
+        if train_ratio <= 0 or val_ratio <= 0:
             raise ValueError("Train and validation ratios must be greater than 0.")
 
         self.images_out_dir = self.dataset_dir / "images"
