@@ -107,7 +107,7 @@ class DatasetSplitter:
         Finds pairs of corresponding images and masks.
         Assumes that for each image file, there is a mask file with the same name.
         """
-        all_images = list(self.image_dir.glob("*.tif"))
+        all_images = sorted(self.image_dir.glob("*.tif"), key=lambda p: p.name)
         file_pairs = []
         for img_path in all_images:
             mask_path = self.mask_dir / img_path.name
