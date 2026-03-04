@@ -64,7 +64,11 @@ class DatasetSplitter:
             )
 
         # Ensure each ratio is a valid proportion in [0, 1]
-        for name, value in (("train_ratio", train_ratio), ("val_ratio", val_ratio), ("test_ratio", test_ratio)):
+        for name, value in (
+            ("train_ratio", train_ratio),
+            ("val_ratio", val_ratio),
+            ("test_ratio", test_ratio),
+        ):
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be between 0 and 1 (received {value}).")
 
@@ -110,7 +114,11 @@ class DatasetSplitter:
             if mask_path.exists():
                 file_pairs.append((img_path, mask_path))
             else:
-                warnings.warn(f"No equivalent mask found for {img_path}", UserWarning, stacklevel=2)
+                warnings.warn(
+                    f"No equivalent mask found for {img_path}",
+                    UserWarning,
+                    stacklevel=2,
+                )
         return file_pairs
 
     def _filter_background_only(self, file_pairs):
