@@ -57,13 +57,22 @@ class DatasetSplitter:
         self.run_background_check = run_background_check
 
         if self.dataset_dir.exists():
-            raise ValueError(f"Output directory '{self.dataset_dir}' already exists. \
-                Please remove it or choose a different output directory.")
+            raise ValueError(
+                f"Output directory '{self.dataset_dir}' already exists. "
+                "Please remove it or choose a different output directory."
+            )
 
+        # Ensure each ratio is a valid proportion in [0, 1]
+        for name, value in (("train_ratio", train_ratio), ("val_ratio", val_ratio), ("test_ratio", test_ratio)):
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be between 0 and 1 (received {value}).")
+
+        # Ensure the ratios collectively sum to 1 (within a small tolerance)
         if not (0.999 < train_ratio + val_ratio + test_ratio < 1.001):
             raise ValueError("The sum of train, val, and test ratios must be 1.")
 
-        if train_ratio == 0 or val_ratio == 0:
+        # Train and validation ratios must be strictly greater than 0
+        if train_ratio <= 0 or val_ratio <= 0:
             raise ValueError("Train and validation ratios must be greater than 0.")
 
         self.images_out_dir = self.dataset_dir / "images"
@@ -131,15 +140,17 @@ class DatasetSplitter:
         file_pairs = self._get_file_pairs()
 
         if not file_pairs:
-            print("Error: No image-mask pairs found.")
-            return
+            raise FileNotFoundError(
+                "No image-mask pairs found in the specified input directories."
+            )
 
         file_pairs = self._filter_background_only(file_pairs)
 
         total_files = len(file_pairs)
         if total_files == 0:
-            print("Error: No valid images found after filtering.")
-            return
+            raise ValueError(
+                "No valid images found after filtering background-only masks."
+            )
 
         self._create_dirs()
 
