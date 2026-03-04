@@ -91,7 +91,7 @@ def test_directory_creation(setup_test_data):
     assert len(test_images) == 0
 
 
-def test_background_check(setup_test_data):
+def test_filter_background_only(setup_test_data):
     dirs = setup_test_data
     # 8 non-background files, 2 background files. The background check should run automatically.
     # The split is on 8 files, 6 train, 2 val

@@ -26,7 +26,7 @@ class DatasetSplitter:
         val_ratio=0.2,
         test_ratio=0.1,
         seed=None,
-        run_background_check=True,
+        filter_background_only=True,
     ):
         """
         Initializes the DatasetSplitter.
@@ -39,7 +39,7 @@ class DatasetSplitter:
             val_ratio (float): The proportion of the data to be used for validation. Must be > 0.
             test_ratio (float): The proportion of the data to be used for testing. Can be 0.
             seed (int, optional): Seed for the random number generator for reproducible shuffling. Defaults to None.
-            run_background_check (bool): If True, uses the CheckBackgroundOnly class to filter out
+            filter_background_only (bool): If True, uses the CheckBackgroundOnly class to filter out
             background-only image/mask pairs before copying the remaining files into the dataset.
             Defaults to True.
 
@@ -56,7 +56,7 @@ class DatasetSplitter:
         self.val_ratio = val_ratio
         self.test_ratio = test_ratio
         self.seed = seed
-        self.run_background_check = run_background_check
+        self.filter_background_only = filter_background_only
 
         if self.dataset_dir.exists():
             raise ValueError(
@@ -124,7 +124,7 @@ class DatasetSplitter:
 
     def _filter_background_only(self, file_pairs):
         """Filters out file pairs that are background only."""
-        if not self.run_background_check:
+        if not self.filter_background_only:
             print("Skipping background check.")
             return file_pairs
 
