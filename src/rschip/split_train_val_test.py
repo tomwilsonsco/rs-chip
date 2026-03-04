@@ -146,8 +146,10 @@ class DatasetSplitter:
         print(f"Found {total_files} valid image-mask pairs for splitting.")
 
         if self.seed is not None:
-            random.seed(self.seed)
-        random.shuffle(file_pairs)
+            rng = random.Random(self.seed)
+            rng.shuffle(file_pairs)
+        else:
+            random.shuffle(file_pairs)
 
         test_count = int(total_files * self.test_ratio)
         val_count = int(total_files * self.val_ratio)
