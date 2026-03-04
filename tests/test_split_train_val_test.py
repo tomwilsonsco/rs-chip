@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 import rasterio as rio
 import numpy as np
-from rschip.split_train_val_test import DatasetSplitter
+from rschip import DatasetSplitter
 
 
 @pytest.fixture
