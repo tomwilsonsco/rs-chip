@@ -9,37 +9,35 @@ from rschip.split_train_val_test import DatasetSplitter
 
 @pytest.fixture
 def setup_test_data():
-    test_dir = tempfile.mkdtemp()
-    image_dir = Path(test_dir) / "images"
-    mask_dir = Path(test_dir) / "masks"
-    output_dir = Path(test_dir) / "output"
-    image_dir.mkdir()
-    mask_dir.mkdir()
-    output_dir.mkdir()
+    with tempfile.TemporaryDirectory() as test_dir:
+        image_dir = Path(test_dir) / "images"
+        mask_dir = Path(test_dir) / "masks"
+        output_dir = Path(test_dir) / "output"
+        image_dir.mkdir()
+        mask_dir.mkdir()
+        output_dir.mkdir()
 
-    # Create dummy files
-    for i in range(10):
-        profile = {
-            "driver": "GTiff",
-            "height": 1,
-            "width": 1,
-            "count": 1,
-            "dtype": "uint8",
-        }
-        with rio.open(image_dir / f"test_{i}.tif", "w", **profile) as dst:
-            dst.write(np.zeros((1, 1, 1), dtype="uint8"))
+        # Create dummy files
+        for i in range(10):
+            profile = {
+                "driver": "GTiff",
+                "height": 1,
+                "width": 1,
+                "count": 1,
+                "dtype": "uint8",
+            }
+            with rio.open(image_dir / f"test_{i}.tif", "w", **profile) as dst:
+                dst.write(np.zeros((1, 1, 1), dtype="uint8"))
 
-        mask_data = (
-            np.ones((1, 1, 1), dtype="uint8")
-            if i < 8
-            else np.zeros((1, 1, 1), dtype="uint8")
-        )
-        with rio.open(mask_dir / f"test_{i}.tif", "w", **profile) as dst:
-            dst.write(mask_data)
+            mask_data = (
+                np.ones((1, 1, 1), dtype="uint8")
+                if i < 8
+                else np.zeros((1, 1, 1), dtype="uint8")
+            )
+            with rio.open(mask_dir / f"test_{i}.tif", "w", **profile) as dst:
+                dst.write(mask_data)
 
-    yield {"image_dir": image_dir, "mask_dir": mask_dir, "output_dir": output_dir}
-
-    shutil.rmtree(test_dir)
+        yield {"image_dir": image_dir, "mask_dir": mask_dir, "output_dir": output_dir}
 
 
 def test_invalid_ratios(setup_test_data):
