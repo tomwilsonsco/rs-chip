@@ -218,19 +218,17 @@ class DatasetSplitter:
             num_cores = max(1, multiprocessing.cpu_count() - 1)
             print(f"Copying {len(files)} {set_name} files using {num_cores} cores.")
 
-            tasks = [
+            task_iter = (
                 (img_path, mask_path, img_dest, mask_dest)
                 for img_path, mask_path in files
-            ]
-
+            )
             with multiprocessing.Pool(num_cores) as pool:
-                list(
-                    tqdm(
-                        pool.imap_unordered(_copy_worker, tasks),
-                        total=len(tasks),
-                        desc=desc,
-                    )
-                )
+                for _ in tqdm(
+                    pool.imap_unordered(_copy_worker, task_iter),
+                    total=len(files),
+                    desc=desc,
+                ):
+                    pass
         else:
             print(f"Copying {len(files)} {set_name} files sequentially.")
             for img_path, mask_path in tqdm(files, desc=desc):
