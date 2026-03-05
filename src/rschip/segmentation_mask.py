@@ -33,10 +33,11 @@ class SegmentationMask:
         self.output_path = Path(output_path)
         self.class_field = class_field
 
-    def create_mask(self) -> None:
+    def create_mask(self, silent=False) -> None:
         """
         Creates the segmentation mask.
         """
+        self.silent = silent
         image_crs, image_bounds, image_transform, image_shape = (
             self._load_image_metadata()
         )
@@ -153,4 +154,5 @@ class SegmentationMask:
         meta.update({"count": 1, "dtype": "uint8", "compress": "lzw"})
         with rio.open(self.output_path, "w", **meta) as dst:
             dst.write(mask, 1)
-            print(f"written {self.output_path}")
+            if not self.silent:
+                print(f"written {self.output_path}")
