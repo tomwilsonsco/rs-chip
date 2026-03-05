@@ -1,9 +1,18 @@
 import warnings
 import shutil
 import random
+import multiprocessing
 from pathlib import Path
 import pandas as pd
+from tqdm import tqdm
 from rschip.check_background import CheckBackgroundOnly
+
+
+def _copy_worker(args):
+    """Worker function to copy a single image-mask pair."""
+    img_path, mask_path, img_dest, mask_dest = args
+    shutil.copy(img_path, img_dest)
+    shutil.copy(mask_path, mask_dest)
 
 
 class DatasetSplitter:
@@ -27,6 +36,7 @@ class DatasetSplitter:
         test_ratio=0.1,
         seed=None,
         filter_background_only=True,
+        use_multiprocessing=True,
     ):
         """
         Initializes the DatasetSplitter.
@@ -42,6 +52,7 @@ class DatasetSplitter:
             filter_background_only (bool): If True, uses the CheckBackgroundOnly class to filter out
             background-only image/mask pairs before copying the remaining files into the dataset.
             Defaults to True.
+            use_multiprocessing (bool): Whether to use multiprocessing for copying files. Defaults to True.
 
         Raises:
             ValueError: If the output directory/dataset already exists, if split ratios do not sum to 1,
@@ -57,6 +68,7 @@ class DatasetSplitter:
         self.test_ratio = test_ratio
         self.seed = seed
         self.filter_background_only = filter_background_only
+        self.use_multiprocessing = use_multiprocessing
 
         if self.dataset_dir.exists():
             raise ValueError(
@@ -185,15 +197,42 @@ class DatasetSplitter:
         val_files = file_pairs[test_count:train_start]
         train_files = file_pairs[train_start:]
 
-        self._copy_files(train_files, self.train_images_dir, self.train_masks_dir)
-        self._copy_files(val_files, self.val_images_dir, self.val_masks_dir)
+        self._copy_files(
+            train_files, self.train_images_dir, self.train_masks_dir, "train"
+        )
+        self._copy_files(val_files, self.val_images_dir, self.val_masks_dir, "val")
         if self.test_ratio > 0:
-            self._copy_files(test_files, self.test_images_dir, self.test_masks_dir)
+            self._copy_files(
+                test_files, self.test_images_dir, self.test_masks_dir, "test"
+            )
 
         print("Dataset splitting complete.")
 
-    def _copy_files(self, files, img_dest, mask_dest):
+    def _copy_files(self, files, img_dest, mask_dest, set_name: str):
         """Copies a list of file pairs to the destination directories."""
-        for img_path, mask_path in files:
-            shutil.copy(img_path, img_dest)
-            shutil.copy(mask_path, mask_dest)
+        if not files:
+            return
+
+        desc = f"Copying {set_name} files"
+        if self.use_multiprocessing:
+            num_cores = max(1, multiprocessing.cpu_count() - 1)
+            print(f"Copying {len(files)} {set_name} files using {num_cores} cores.")
+
+            tasks = [
+                (img_path, mask_path, img_dest, mask_dest)
+                for img_path, mask_path in files
+            ]
+
+            with multiprocessing.Pool(num_cores) as pool:
+                list(
+                    tqdm(
+                        pool.imap_unordered(_copy_worker, tasks),
+                        total=len(tasks),
+                        desc=desc,
+                    )
+                )
+        else:
+            print(f"Copying {len(files)} {set_name} files sequentially.")
+            for img_path, mask_path in tqdm(files, desc=desc):
+                shutil.copy(img_path, img_dest)
+                shutil.copy(mask_path, mask_dest)
