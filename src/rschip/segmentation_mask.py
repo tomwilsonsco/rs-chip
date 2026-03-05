@@ -150,7 +150,7 @@ class SegmentationMask:
         """
         with rio.open(self.input_image_path) as src:
             meta = src.meta.copy()
-        meta.update({"count": 1, "dtype": "uint8", "compress": "lzw"})
+        meta.update({"count": 1, "dtype": "uint8", "compress": "lzw", "nodata": None})
         with rio.open(self.output_path, "w", **meta) as dst:
             dst.write(mask, 1)
             if not silent:
