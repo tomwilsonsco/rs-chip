@@ -141,7 +141,7 @@ class SegmentationMask:
         )
         return mask
 
-    def _write_mask(self, mask: np.ndarray, silent: bool=False) -> None:
+    def _write_mask(self, mask: np.ndarray, silent: bool = False) -> None:
         """
         Writes the mask array to the output image file.
 
