@@ -37,14 +37,13 @@ class SegmentationMask:
         """
         Creates the segmentation mask.
         """
-        self.silent = silent
         image_crs, image_bounds, image_transform, image_shape = (
             self._load_image_metadata()
         )
         input_features = self._load_and_validate_features(image_crs)
         input_features = self._clip_features_to_image(input_features, image_bounds)
         mask = self._rasterize_features(input_features, image_shape, image_transform)
-        self._write_mask(mask)
+        self._write_mask(mask, silent)
 
     def _load_image_metadata(self):
         """
@@ -142,7 +141,7 @@ class SegmentationMask:
         )
         return mask
 
-    def _write_mask(self, mask: np.ndarray) -> None:
+    def _write_mask(self, mask: np.ndarray, silent: bool=False) -> None:
         """
         Writes the mask array to the output image file.
 
@@ -154,5 +153,5 @@ class SegmentationMask:
         meta.update({"count": 1, "dtype": "uint8", "compress": "lzw"})
         with rio.open(self.output_path, "w", **meta) as dst:
             dst.write(mask, 1)
-            if not self.silent:
+            if not silent:
                 print(f"written {self.output_path}")
