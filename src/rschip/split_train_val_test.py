@@ -109,11 +109,11 @@ class DatasetSplitter:
         Assumes that for each image file, there is a mask file with the same name.
         """
         all_images = sorted(self.image_dir.glob("*.tif"), key=lambda p: p.name)
+        existing_masks = {p.name for p in self.mask_dir.glob("*.tif")}  # one-time scan
         file_pairs = []
         for img_path in all_images:
-            mask_path = self.mask_dir / img_path.name
-            if mask_path.exists():
-                file_pairs.append((img_path, mask_path))
+            if img_path.name in existing_masks:
+                file_pairs.append((img_path, self.mask_dir / img_path.name))
             else:
                 warnings.warn(
                     f"No equivalent mask found for {img_path}",
@@ -138,13 +138,15 @@ class DatasetSplitter:
         else:
             df = pd.read_csv(background_csv)
 
-        background_files = df[df["is_background_only"]]["mask_file"].tolist()
-        background_files = [Path(f).name for f in background_files]
+        background_files = set(
+            Path(f).name for f in df[df["is_background_only"]]["mask_file"]
+        )
 
-        filtered_pairs = []
-        for img_path, mask_path in file_pairs:
-            if mask_path.name not in background_files:
-                filtered_pairs.append((img_path, mask_path))
+        filtered_pairs = [
+            (img_path, mask_path)
+            for img_path, mask_path in file_pairs
+            if mask_path.name not in background_files
+        ]
 
         return filtered_pairs
 
