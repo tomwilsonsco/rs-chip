@@ -476,14 +476,16 @@ class ImageChip:
             print(
                 f"Processing {len(batches)} batches in parallel using {num_cores} cores."
             )
-            with multiprocessing.Pool(processes=num_cores) as pool:
-                with tqdm(
-                    total=len(batches), desc="Chipping (parallel)", unit="batch"
-                ) as pbar:
-                    for _ in pool.imap_unordered(self._process_batch, batches):
-                        pbar.update()
+            with multiprocessing.Pool(num_cores) as pool:
+                list(
+                    tqdm(
+                        pool.imap_unordered(self._process_batch, batches),
+                        total=len(batches),
+                        desc="Processing batches",
+                    )
+                )
         else:
-            for batch in tqdm(batches, desc="Chipping", unit="batch"):
+            for batch in tqdm(batches, desc="Processing batches", unit="batch"):
                 self._process_batch(batch)
 
         elapsed_time = time.time() - start_time
