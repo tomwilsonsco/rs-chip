@@ -52,7 +52,8 @@ class DatasetSplitter:
             filter_background_only (bool): If True, uses the CheckBackgroundOnly class to filter out
             background-only image/mask pairs before copying the remaining files into the dataset.
             Defaults to True.
-            use_multiprocessing (bool): Whether to use multiprocessing for copying files. Defaults to True.
+            use_multiprocessing (bool): Whether to use multiprocessing for copying files and background-only check.
+            Defaults to True.
 
         Raises:
             ValueError: If the output directory/dataset already exists, if split ratios do not sum to 1,
