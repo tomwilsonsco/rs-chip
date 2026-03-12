@@ -139,7 +139,9 @@ class CheckBackgroundOnly:
             for args in tqdm(task_args, desc="Checking background chips"):
                 audit_data.append(self._process_single_chip(args))
 
-        df = pd.DataFrame(audit_data).sort_values(by="mask_file")
+        df = (
+            pd.DataFrame(audit_data).sort_values(by="mask_file").reset_index(drop=True)
+        )
 
         output_csv_path = class_chips_dir / "background_only_check.csv"
         df.to_csv(output_csv_path, index=False)
