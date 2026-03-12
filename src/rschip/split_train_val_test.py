@@ -145,7 +145,7 @@ class DatasetSplitter:
             print(
                 f"'{background_csv}' not found. Running check for background only chips"
             )
-            checker = CheckBackgroundOnly()
+            checker = CheckBackgroundOnly(use_multiprocessing=self.use_multiprocessing)
             df = checker.check_background_chips(str(self.mask_dir), str(self.image_dir))
         else:
             df = pd.read_csv(background_csv)
