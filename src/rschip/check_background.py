@@ -1,8 +1,10 @@
 from pathlib import Path
+import multiprocessing
 import rasterio as rio
 import numpy as np
 from typing import Optional, Union
 import pandas as pd
+from tqdm import tqdm
 
 
 class CheckBackgroundOnly:
@@ -17,13 +19,18 @@ class CheckBackgroundOnly:
         Defaults to 0.
         non_background_min (int): The minimum number of non-background pixels required to consider a chip
         as not background-only. Defaults to 1.
+        use_multiprocessing (bool): Whether to use multiprocessing for checking files. Defaults to True.
     """
 
     def __init__(
-        self, background_val: Union[int, float] = 0, non_background_min: int = 1
+        self,
+        background_val: Union[int, float] = 0,
+        non_background_min: int = 1,
+        use_multiprocessing: bool = True,
     ):
         self.background_val = background_val
         self.non_background_min = non_background_min
+        self.use_multiprocessing = use_multiprocessing
 
     @staticmethod
     def _prefix_checker(prefix: Optional[str]) -> str:
@@ -42,6 +49,21 @@ class CheckBackgroundOnly:
             self._prefix_checker(masks_prefix), self._prefix_checker(images_prefix)
         )
         return image_chips_dir / image_file
+
+    def _process_single_chip(self, args):
+        """Worker to process a single chip."""
+        mask_file, image_chips_dir, masks_prefix, images_prefix = args
+        with rio.open(mask_file) as src:
+            img = src.read(1)
+        is_background = self.check_background_only(img)
+        image_file = self._find_image_eq_mask(
+            mask_file, image_chips_dir, masks_prefix, images_prefix
+        )
+        return {
+            "mask_file": mask_file,
+            "image_file": image_file,
+            "is_background_only": is_background,
+        }
 
     def check_background_only(self, class_arr: np.ndarray) -> bool:
         """
@@ -96,25 +118,29 @@ class CheckBackgroundOnly:
 
         print(f"Checking {len(mask_files)} files in {class_chips_dir}.")
 
-        audit_data = []
-        for f in mask_files:
-            with rio.open(f) as src:
-                img = src.read(1)
-            is_background = self.check_background_only(img)
-            image_file = self._find_image_eq_mask(
-                f, image_chips_dir, masks_prefix, images_prefix
-            )
-            audit_data.append(
-                {
-                    "mask_file": f,
-                    "image_file": image_file,
-                    "is_background_only": is_background,
-                }
-            )
+        task_args = [
+            (f, image_chips_dir, masks_prefix, images_prefix) for f in mask_files
+        ]
 
-        df = pd.DataFrame(audit_data)
+        if self.use_multiprocessing:
+            num_cores = max(1, multiprocessing.cpu_count() - 1)
+            print(f"Processing with {num_cores} cores.")
+            with multiprocessing.Pool(num_cores) as pool:
+                audit_data = list(
+                    tqdm(
+                        pool.imap_unordered(self._process_single_chip, task_args),
+                        total=len(mask_files),
+                        desc="Checking background chips",
+                    )
+                )
+        else:
+            print("Processing sequentially.")
+            audit_data = []
+            for args in tqdm(task_args, desc="Checking background chips"):
+                audit_data.append(self._process_single_chip(args))
 
-        # Save to CSV
+        df = pd.DataFrame(audit_data).sort_values(by="mask_file").reset_index(drop=True)
+
         output_csv_path = class_chips_dir / "background_only_check.csv"
         df.to_csv(output_csv_path, index=False)
 

@@ -128,3 +128,42 @@ def test_non_background_min_check(setup_output_dir):
     assert (
         background_only_count2 >= background_only_count1
     ), "Higher non_background_min threshold should result in more background-only chips."
+
+
+def test_multiprocessing_consistency(setup_output_dir):
+    """
+    Ensure that running the check with and without multiprocessing yields the same results.
+    """
+    out_dir = setup_output_dir
+    out_mask = out_dir / "output_mask.tif"
+    out_mask_chips = out_dir / "mask_chips"
+    out_img_chips = out_dir / "img_chips"
+
+    out_mask_chips.mkdir()
+    out_img_chips.mkdir()
+
+    mask_creator = SegmentationMask(
+        "tests/data/test_img.tif", "tests/data/test_features.gpkg", out_mask
+    )
+    mask_creator.create_mask()
+
+    chip_image_run(
+        output_path=out_img_chips,
+        input_image_path="tests/data/test_img.tif",
+    )
+    chip_image_run(
+        output_path=out_mask_chips,
+        input_image_path=out_mask,
+        output_name="test_img",
+    )
+
+    # run with multiprocessing
+    checker_mp = CheckBackgroundOnly(use_multiprocessing=True)
+    df_mp = checker_mp.check_background_chips(str(out_mask_chips), str(out_img_chips))
+
+    # run sequentially
+    checker_sp = CheckBackgroundOnly(use_multiprocessing=False)
+    df_sp = checker_sp.check_background_chips(str(out_mask_chips), str(out_img_chips))
+
+    # compare results
+    pd.testing.assert_frame_equal(df_mp, df_sp)
