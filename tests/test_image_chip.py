@@ -327,7 +327,15 @@ def test_scale_factor_resampling(setup_output_dir):
     )
 
     tif_files = tif_files_to_list(out_dir)
-    assert len(tif_files) > 0, "No TIFF files were created."
+
+    top_left_chip = None
+    for path in tif_files:
+        if path.name.endswith("_0_0.tif"):
+            top_left_chip = path
+            break
+    assert (
+        top_left_chip is not None
+    ), "Could not find top-left chip file ending with '_0_0.tif'."
 
     with rio.open(tif_files[0]) as f:
         arr = f.read()
@@ -357,6 +365,16 @@ def test_scale_factor_resampling_upscale(setup_output_dir):
     )
     tif_files = tif_files_to_list(out_dir)
     assert len(tif_files) > 0, "No TIFF files were created."
+
+    top_left_chip = None
+    for path in tif_files:
+        if path.name.endswith("_0_0.tif"):
+            top_left_chip = path
+            break
+    assert (
+        top_left_chip is not None
+    ), "Could not find top-left chip file ending with '_0_0.tif'."
+
     with rio.open(tif_files[0]) as f:
         arr = f.read()
         prof = f.profile
