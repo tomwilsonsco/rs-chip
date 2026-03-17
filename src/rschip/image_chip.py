@@ -418,12 +418,12 @@ class ImageChip:
         """
         _, batch = batch_vals
         with rio.open(self.input_image_path) as src:
+            resampling_method = (
+                rio.enums.Resampling.bilinear
+                if self.scale_factor != 1.0
+                else rio.enums.Resampling.nearest
+            )
             for x, y, window in batch:
-                resampling_method = (
-                    rio.enums.Resampling.bilinear
-                    if self.scale_factor != 1.0
-                    else rio.enums.Resampling.nearest
-                )
                 chip = src.read(
                     out_shape=(src.count, self.pixel_dimensions, self.pixel_dimensions),
                     window=window,
