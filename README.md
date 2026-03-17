@@ -58,7 +58,7 @@ Using the parameter `use_multiprocessing=True` (default) makes chipping process 
 It is possible to resample, i.e. downscale or upscale image resolution by specifying a `scale_factor` argument:
 
 ```python
-# to downscale images by factor of 0.5 e.g. 0.125 metre per pixel become 0.25 metre per pixel. 
+# to downscale images by factor of 0.5 e.g. 0.125 metre per pixel becomes 0.25 metre per pixel. 
 image_chipper = ImageChip(
     input_image_path="path/to/large_image.tif",
     output_path="path/to/output_directory_image",
