@@ -24,6 +24,7 @@ def chip_image_run(
     max_batch_size=10,
     scaler=False,
     normaliser=False,
+    scale_factor=1.0,
 ):
     image_chip = ImageChip(
         input_image_path=input_image_path,
@@ -32,6 +33,7 @@ def chip_image_run(
         offset=offset,
         use_multiprocessing=use_multiprocessing,
         max_batch_size=max_batch_size,
+        scale_factor=scale_factor,
     )
     if scaler:
         image_chip.set_scaler()
@@ -296,6 +298,47 @@ def test_nodata_val_set_from_image():
             input_image_path="tests/data/test_img.tif", output_path="tmp"
         )
     assert image_chip.nodata_val == 0
+
+
+def test_init_invalid_scale_factor():
+    with pytest.raises(ValueError, match="scale_factor must be greater than 0"):
+        ImageChip(
+            input_image_path="tests/data/test_img.tif",
+            output_path="tmp",
+            scale_factor=0,
+        )
+
+
+def test_scale_factor_resampling(setup_output_dir):
+    out_dir = setup_output_dir
+    input_image_path = "tests/data/test_img.tif"
+    pixel_dimensions = 64
+    scale_factor = 0.5
+
+    with rio.open(input_image_path) as src:
+        orig_transform = src.transform
+
+    chip_image_run(
+        output_path=out_dir,
+        input_image_path=input_image_path,
+        pixel_dimensions=pixel_dimensions,
+        scale_factor=scale_factor,
+        use_multiprocessing=False,
+    )
+
+    tif_files = tif_files_to_list(out_dir)
+    assert len(tif_files) > 0, "No TIFF files were created."
+
+    with rio.open(tif_files[0]) as f:
+        arr = f.read()
+        prof = f.profile
+
+    assert arr.shape[1] == pixel_dimensions
+    assert arr.shape[2] == pixel_dimensions
+
+    scale_ratio = int(pixel_dimensions / scale_factor) / pixel_dimensions
+    assert np.isclose(prof["transform"].a, orig_transform.a * scale_ratio)
+    assert np.isclose(prof["transform"].e, orig_transform.e * scale_ratio)
 
 
 if __name__ == "__main__":
