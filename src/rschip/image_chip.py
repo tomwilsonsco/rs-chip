@@ -22,6 +22,9 @@ class ImageChip:
         use_multiprocessing (bool): Whether to use multiprocessing for chipping. Defaults to True.
         max_batch_size (int): The maximum number of tiles to process in a batch.
                              If multiprocessing is enabled, the actual batch size may be less. Defaults to 1000.
+        scale_factor (float): The factor by which to scale the image when creating chips. For example,
+                              a scale_factor of 0.5 will result in reading a window twice the size of
+                              pixel_dimensions and downscaling it to pixel_dimensions. Defaults to 1.0 (no scaling).
     """
 
     def __init__(
@@ -33,6 +36,7 @@ class ImageChip:
         offset=64,
         use_multiprocessing=True,
         max_batch_size=1000,
+        scale_factor=1.0,
     ):
 
         self.input_image_path = Path(input_image_path)
@@ -44,6 +48,12 @@ class ImageChip:
         self.normaliser = None
         self.use_multiprocessing = use_multiprocessing
         self.max_batch_size = max_batch_size
+        self.scale_factor = scale_factor
+
+        if self.scale_factor <= 0:
+            raise ValueError("scale_factor must be greater than 0")
+
+        self.read_dimensions = int(self.pixel_dimensions / self.scale_factor)
         if not self.input_image_path.exists():
             raise FileNotFoundError(f"Input image not found: {self.input_image_path}")
         self._read_image_metadata()
@@ -80,7 +90,7 @@ class ImageChip:
         """
         Generate sliding windows (tiles) across the input image.
 
-        Yields the x and y coordinates of the top-left corner of each window and window of pixel dimensions size.
+        Yields the x and y coordinates of the top-left corner of each window and window of read dimensions size.
 
         Args:
             src: The source rasterio image object that is being split into windows.
@@ -93,7 +103,7 @@ class ImageChip:
         """
         for y in range(0, src.height, self.offset):
             for x in range(0, src.width, self.offset):
-                window = Window(x, y, self.pixel_dimensions, self.pixel_dimensions)
+                window = Window(x, y, self.read_dimensions, self.read_dimensions)
                 yield x, y, window
 
     def _save_chip(self, chip, transform, output_file_path, d_type, src) -> None:
@@ -406,8 +416,17 @@ class ImageChip:
         _, batch = batch_vals
         with rio.open(self.input_image_path) as src:
             for x, y, window in batch:
+                resampling_method = (
+                    rio.enums.Resampling.bilinear
+                    if self.scale_factor != 1.0
+                    else rio.enums.Resampling.nearest
+                )
                 chip = src.read(
-                    window=window, boundless=True, fill_value=self.nodata_val
+                    out_shape=(src.count, self.pixel_dimensions, self.pixel_dimensions),
+                    window=window,
+                    boundless=True,
+                    fill_value=self.nodata_val,
+                    resampling=resampling_method,
                 )
                 if self.standard_scaler:
                     chip = self.apply_scaler(chip, self.standard_scaler)
@@ -416,6 +435,9 @@ class ImageChip:
 
                 output_file_path = self._output_file(x, y)
                 transform = src.window_transform(window)
+                if self.scale_factor != 1.0:
+                    scale_ratio = self.read_dimensions / self.pixel_dimensions
+                    transform = transform * rio.transform.Affine.scale(scale_ratio)
                 self._save_chip(chip, transform, output_file_path, chip.dtype, src)
 
     def _calculate_batches(self, windows):
