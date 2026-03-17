@@ -7,6 +7,7 @@ import pickle
 import multiprocessing
 import time
 from tqdm import tqdm
+import math
 
 
 class ImageChip:
@@ -53,7 +54,9 @@ class ImageChip:
         if self.scale_factor <= 0:
             raise ValueError("scale_factor must be greater than 0")
 
-        self.read_dimensions = int(self.pixel_dimensions / self.scale_factor)
+        self.read_dimensions = max(
+            1, int(math.ceil(self.pixel_dimensions / self.scale_factor))
+        )
         if not self.input_image_path.exists():
             raise FileNotFoundError(f"Input image not found: {self.input_image_path}")
         self._read_image_metadata()
