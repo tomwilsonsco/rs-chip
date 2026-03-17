@@ -100,8 +100,8 @@ class ImageChip:
 
         Yields:
             tuple: A tuple containing:
-                - x (int): The x-coordinate of the bottom-left corner of the window.
-                - y (int): The y-coordinate of the bottom-left corner of the window.
+                - x (int): The x-coordinate of the top-left corner of the window.
+                - y (int): The y-coordinate of the top-left corner of the window.
                 - window (rasterio.windows.Window): A Window of the region of the image to be processed.
         """
 
