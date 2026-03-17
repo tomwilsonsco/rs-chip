@@ -55,6 +55,19 @@ pixel coordinate position. By default, the prefix of each tile name is taken fro
 
 Using the parameter `use_multiprocessing=True` (default) makes chipping process faster by using multiple cores. 
 
+It is possible to resample, i.e. downscale or upscale image resolution by specifying a `scale_factor` argument:
+
+```python
+# to downscale images by factor of 2 e.g. 0.125 metre per pixel become 0.25 metre per pixel. 
+image_chipper = ImageChip(
+    input_image_path="path/to/large_image.tif",
+    output_path="path/to/output_directory_image",
+    pixel_dimensions=128,
+    offset=64,
+    scale_factor=2,
+)
+```
+
 ### 2. SegmentationMask Class
 The `SegmentationMask` class is used to create a segmentation mask images from geopackage or shapefile using an input image as extent and pixel size reference.
 
