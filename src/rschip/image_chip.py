@@ -104,8 +104,14 @@ class ImageChip:
                 - y (int): The y-coordinate of the bottom-left corner of the window.
                 - window (rasterio.windows.Window): A Window of the region of the image to be processed.
         """
-        for y in range(0, src.height, self.offset):
-            for x in range(0, src.width, self.offset):
+
+        scale_factor = getattr(self, "scale_factor", 1)
+        if scale_factor not in (None, 0, 1):
+            read_offset = math.ceil(self.offset / scale_factor)
+        else:
+            read_offset = self.offset
+        for y in range(0, src.height, read_offset):
+            for x in range(0, src.width, read_offset):
                 window = Window(x, y, self.read_dimensions, self.read_dimensions)
                 yield x, y, window
 
