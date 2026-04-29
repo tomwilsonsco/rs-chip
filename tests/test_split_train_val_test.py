@@ -195,9 +195,13 @@ def test_exclude_files_empty_list(setup_test_data):
     )
     splitter.split()
 
-    train_images = list((dirs["output_dir"] / "dataset" / "images" / "train").glob("*.tif"))
+    train_images = list(
+        (dirs["output_dir"] / "dataset" / "images" / "train").glob("*.tif")
+    )
     val_images = list((dirs["output_dir"] / "dataset" / "images" / "val").glob("*.tif"))
-    test_images = list((dirs["output_dir"] / "dataset" / "images" / "test").glob("*.tif"))
+    test_images = list(
+        (dirs["output_dir"] / "dataset" / "images" / "test").glob("*.tif")
+    )
     assert len(train_images) + len(val_images) + len(test_images) == 10
 
 
