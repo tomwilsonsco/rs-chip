@@ -73,7 +73,15 @@ class DatasetSplitter:
         self.seed = seed
         self.filter_background_only = filter_background_only
         self.use_multiprocessing = use_multiprocessing
-        self.exclude_files = set(exclude_files) if exclude_files else set()
+        if exclude_files is not None:
+            if isinstance(exclude_files, (str, Path)):
+                raise TypeError(
+                    "exclude_files must be a list of file names, not a single str or Path. "
+                    f"Did you mean exclude_files=['{exclude_files}']?"
+                )
+            self.exclude_files = {Path(f).name for f in exclude_files}
+        else:
+            self.exclude_files = set()
 
         if self.dataset_dir.exists():
             raise ValueError(

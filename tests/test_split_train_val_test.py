@@ -221,3 +221,42 @@ def test_exclude_all_files_raises(setup_test_data):
     )
     with pytest.raises(FileNotFoundError, match="exclusions"):
         splitter.split()
+
+
+def test_exclude_files_bare_string_raises(setup_test_data):
+    # Passing a bare string instead of a list should raise TypeError immediately
+    dirs = setup_test_data
+    with pytest.raises(TypeError, match="exclude_files must be a list"):
+        DatasetSplitter(
+            dirs["image_dir"],
+            dirs["mask_dir"],
+            dirs["output_dir"],
+            filter_background_only=False,
+            exclude_files="test_0.tif",
+        )
+
+
+def test_exclude_files_full_path_normalised(setup_test_data):
+    # Entries that are full paths should be normalised to basenames
+    dirs = setup_test_data
+    full_path_excluded = [
+        str(dirs["image_dir"] / "test_0.tif"),
+        str(dirs["image_dir"] / "test_1.tif"),
+    ]
+    splitter = DatasetSplitter(
+        dirs["image_dir"],
+        dirs["mask_dir"],
+        dirs["output_dir"],
+        train_ratio=0.7,
+        val_ratio=0.2,
+        test_ratio=0.1,
+        seed=42,
+        filter_background_only=False,
+        exclude_files=full_path_excluded,
+    )
+    splitter.split()
+
+    dataset_dir = dirs["output_dir"] / "dataset"
+    all_output_files = {p.name for p in dataset_dir.rglob("*.tif")}
+    assert "test_0.tif" not in all_output_files
+    assert "test_1.tif" not in all_output_files
