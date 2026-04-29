@@ -37,6 +37,7 @@ class DatasetSplitter:
         seed=None,
         filter_background_only=True,
         use_multiprocessing=True,
+        exclude_files=None,
     ):
         """
         Initializes the DatasetSplitter.
@@ -54,6 +55,8 @@ class DatasetSplitter:
             Defaults to True.
             use_multiprocessing (bool): Whether to use multiprocessing for copying files and background-only check.
             Defaults to True.
+            exclude_files (list of str, optional): A list of file names (e.g. ["chip_001.tif"]) to completely
+            exclude from all splits. Excluded files will not appear in train, val, or test. Defaults to None.
 
         Raises:
             ValueError: If the output directory/dataset already exists, if split ratios do not sum to 1,
@@ -70,6 +73,15 @@ class DatasetSplitter:
         self.seed = seed
         self.filter_background_only = filter_background_only
         self.use_multiprocessing = use_multiprocessing
+        if exclude_files is not None:
+            if isinstance(exclude_files, (str, Path)):
+                raise TypeError(
+                    "exclude_files must be a list of file names, not a single str or Path. "
+                    f"Did you mean exclude_files=['{exclude_files}']?"
+                )
+            self.exclude_files = {Path(f).name for f in exclude_files}
+        else:
+            self.exclude_files = set()
 
         if self.dataset_dir.exists():
             raise ValueError(
@@ -125,6 +137,8 @@ class DatasetSplitter:
         existing_masks = {p.name for p in self.mask_dir.glob("*.tif")}  # one-time scan
         file_pairs = []
         for img_path in all_images:
+            if img_path.name in self.exclude_files:
+                continue
             if img_path.name in existing_masks:
                 file_pairs.append((img_path, self.mask_dir / img_path.name))
             else:
@@ -168,6 +182,11 @@ class DatasetSplitter:
         file_pairs = self._get_file_pairs()
 
         if not file_pairs:
+            if self.exclude_files:
+                raise FileNotFoundError(
+                    "No image-mask pairs found after applying exclusions. "
+                    f"All files may have been excluded ({len(self.exclude_files)} exclusion(s) provided)."
+                )
             raise FileNotFoundError(
                 "No image-mask pairs found in the specified input directories."
             )

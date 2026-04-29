@@ -150,3 +150,113 @@ def test_no_filter_background(setup_test_data):
     assert len(train_images) == 7
     assert len(val_images) == 2
     assert len(test_images) == 1
+
+
+def test_exclude_files(setup_test_data):
+    dirs = setup_test_data
+    excluded = ["test_0.tif", "test_1.tif"]
+    splitter = DatasetSplitter(
+        dirs["image_dir"],
+        dirs["mask_dir"],
+        dirs["output_dir"],
+        train_ratio=0.7,
+        val_ratio=0.2,
+        test_ratio=0.1,
+        seed=42,
+        filter_background_only=False,
+        exclude_files=excluded,
+    )
+    splitter.split()
+
+    dataset_dir = dirs["output_dir"] / "dataset"
+    all_output_files = set(p.name for p in dataset_dir.rglob("*.tif"))
+    for name in excluded:
+        assert name not in all_output_files
+
+    train_images = list((dataset_dir / "images" / "train").glob("*.tif"))
+    val_images = list((dataset_dir / "images" / "val").glob("*.tif"))
+    test_images = list((dataset_dir / "images" / "test").glob("*.tif"))
+    assert len(train_images) + len(val_images) + len(test_images) == 8
+
+
+def test_exclude_files_empty_list(setup_test_data):
+    # Passing an empty list should behave identically to passing None (no exclusions)
+    dirs = setup_test_data
+    splitter = DatasetSplitter(
+        dirs["image_dir"],
+        dirs["mask_dir"],
+        dirs["output_dir"],
+        train_ratio=0.7,
+        val_ratio=0.2,
+        test_ratio=0.1,
+        seed=42,
+        filter_background_only=False,
+        exclude_files=[],
+    )
+    splitter.split()
+
+    train_images = list(
+        (dirs["output_dir"] / "dataset" / "images" / "train").glob("*.tif")
+    )
+    val_images = list((dirs["output_dir"] / "dataset" / "images" / "val").glob("*.tif"))
+    test_images = list(
+        (dirs["output_dir"] / "dataset" / "images" / "test").glob("*.tif")
+    )
+    assert len(train_images) + len(val_images) + len(test_images) == 10
+
+
+def test_exclude_all_files_raises(setup_test_data):
+    # Excluding every file should raise FileNotFoundError with a message about exclusions
+    dirs = setup_test_data
+    all_files = [f"test_{i}.tif" for i in range(10)]
+    splitter = DatasetSplitter(
+        dirs["image_dir"],
+        dirs["mask_dir"],
+        dirs["output_dir"],
+        train_ratio=0.7,
+        val_ratio=0.2,
+        test_ratio=0.1,
+        filter_background_only=False,
+        exclude_files=all_files,
+    )
+    with pytest.raises(FileNotFoundError, match="exclusions"):
+        splitter.split()
+
+
+def test_exclude_files_bare_string_raises(setup_test_data):
+    # Passing a bare string instead of a list should raise TypeError immediately
+    dirs = setup_test_data
+    with pytest.raises(TypeError, match="exclude_files must be a list"):
+        DatasetSplitter(
+            dirs["image_dir"],
+            dirs["mask_dir"],
+            dirs["output_dir"],
+            filter_background_only=False,
+            exclude_files="test_0.tif",
+        )
+
+
+def test_exclude_files_full_path_normalised(setup_test_data):
+    # Entries that are full paths should be normalised to basenames
+    dirs = setup_test_data
+    full_path_excluded = [
+        str(dirs["image_dir"] / "test_0.tif"),
+        str(dirs["image_dir"] / "test_1.tif"),
+    ]
+    splitter = DatasetSplitter(
+        dirs["image_dir"],
+        dirs["mask_dir"],
+        dirs["output_dir"],
+        train_ratio=0.7,
+        val_ratio=0.2,
+        test_ratio=0.1,
+        seed=42,
+        filter_background_only=False,
+        exclude_files=full_path_excluded,
+    )
+    splitter.split()
+
+    dataset_dir = dirs["output_dir"] / "dataset"
+    all_output_files = {p.name for p in dataset_dir.rglob("*.tif")}
+    assert "test_0.tif" not in all_output_files
+    assert "test_1.tif" not in all_output_files
